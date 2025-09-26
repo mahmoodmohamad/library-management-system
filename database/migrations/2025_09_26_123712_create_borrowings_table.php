@@ -13,6 +13,16 @@ return new class extends Migration
     {
         Schema::create('borrowings', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('book_id');
+            $table->date('borrowed_at');
+            $table->date('due_date');
+            $table->date('returned_at');
+            $table->enum('status', ['borrowed', 'returned', 'overdue'])->default('borrowed');
+            $table->decimal('fine_amount',8,2)->default(0);
+
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('book_id')->references('id')->on('books')->onDelete('cascade');
             $table->timestamps();
         });
     }
