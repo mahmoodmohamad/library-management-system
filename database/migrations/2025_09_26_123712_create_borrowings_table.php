@@ -21,9 +21,10 @@ return new class extends Migration
     $table->enum('status', ['borrowed', 'returned', 'overdue'])->default('borrowed');
     $table->decimal('fine_amount', 8, 2)->default(0);
 
-    $table->foreign('member_id')->references('id')->on('members')->onDelete('cascade');
-    $table->foreign('book_id')->references('id')->on('books')->onDelete('cascade');
+   
     $table->timestamps();
+     $table->foreign('member_id')->references('id')->on('members')->onDelete('cascade');
+    $table->foreign('book_id')->references('id')->on('books')->onDelete('cascade');
 });
     }
 

@@ -5,14 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Role extends Model
+class AuthorBook extends Model
 {
     //
     use HasFactory;
-    protected $fillable = ['name'];
 
-    public function users()
-    {
-        return $this->hasMany(User::class);
-    }
+     protected $table = 'author_book'; // pivot table
+    protected $fillable = ['book_id', 'author_id'];
 }

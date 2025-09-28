@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('website')->nullable();
             $table->string('address');
             $table->string('email')->nullable();
+            $table->string('postcode')->nullable();
             $table->timestamps();
         });
     }
