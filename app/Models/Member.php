@@ -9,6 +9,13 @@ class Member extends Model
 {
     //
     use HasFactory;
+    protected $casts = [
+        'date_of_birth' => 'date',
+        'membership_start_date' => 'date',
+        'membership_expiry_date' => 'date',
+        'outstanding_fines' => 'decimal:2',
+    ];
+
     protected $fillable = [
         'member_number',
         'first_name',

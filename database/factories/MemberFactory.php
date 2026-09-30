@@ -37,4 +37,24 @@ class MemberFactory extends Factory
             'notes'                  => $this->faker->optional()->sentence(10),
         ];
     }
+    public function active(): static
+{
+    return $this->state(fn () => [
+        'status' => 'active',
+        'membership_expiry_date' => now()->addYear()->toDateString(),
+    ]);
+}
+
+public function suspended(): static
+{
+    return $this->state(fn () => ['status' => 'suspended']);
+}
+
+public function expired(): static
+{
+    return $this->state(fn () => [
+        'status' => 'expired',
+        'membership_expiry_date' => now()->subMonth()->toDateString(),
+    ]);
+}
 }
