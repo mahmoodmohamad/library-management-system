@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Member;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class RegisterController extends Controller
@@ -18,27 +20,24 @@ class RegisterController extends Controller
         return view('auth.register');
     }
 
-    public function store(Request $request): RedirectResponse
-    {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', 'min:8'],
-        ]);
+  public function store(Request $request): RedirectResponse
+{
+    $data = $request->validate([
+        'name' => ['required', 'string', 'max:255'],
+        'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+        'password' => ['required', 'confirmed', 'min:8'],
+    ]);
 
-        $memberRole = Role::where('name', 'member')->firstOrFail();
+    $user = User::create([
+        'name' => $data['name'],
+        'email' => $data['email'],
+        'password' => $data['password'], // cast 'hashed'
+        'role_id' => Role::where('name', 'member')->firstOrFail()->id,
+    ]);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role_id' => $memberRole->id,
-        ]);
+    Auth::login($user);
+    $request->session()->regenerate();
 
-        Auth::login($user);
-
-        $request->session()->regenerate();
-
-        return redirect()->intended('/');
-    }
+    return redirect()->intended('/');
+}
 }

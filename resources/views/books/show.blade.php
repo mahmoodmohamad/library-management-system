@@ -252,7 +252,7 @@
                             </dt>
 
                             <dd class="text-sm text-slate-800 sm:col-span-2">
-                                {{ $book->total_quantity }}
+                                {{ $book->total_copies }}
                             </dd>
 
                         </div>
@@ -269,144 +269,70 @@
 
 
     {{-- Borrow / Reserve Action --}}
-    <section class="rounded-2xl border border-slate-200
-                    bg-white p-6 shadow-sm">
+   <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
 
-        <div class="flex flex-col gap-5 sm:flex-row sm:items-center
-                    sm:justify-between">
-
-            <div>
-
-                @if($book->available_quantity > 0)
-
-                    <h2 class="font-bold text-slate-900">
-                        Ready to borrow?
-                    </h2>
-
-                    <p class="mt-1 text-sm text-slate-500">
-                        This book is currently available.
-                    </p>
-
-                @else
-
-                    <h2 class="font-bold text-slate-900">
-                        This book is currently borrowed
-                    </h2>
-
-                    <p class="mt-1 text-sm text-slate-500">
-                        You can reserve it and we'll keep your request in the queue.
-                    </p>
-
-                @endif
-
-            </div>
-
-
-            <div class="flex flex-col gap-2 sm:flex-row">
-
-                @auth
-
-                    @if($book->available_quantity > 0)
-
-                        {{-- Borrow --}}
-                        <form method="POST"
-                              action="{{ route('books.borrow', $book) }}">
-
-                            @csrf
-
-                            <button type="submit"
-                                    class="inline-flex w-full items-center
-                                           justify-center gap-2 rounded-lg
-                                           bg-blue-600 px-5 py-2.5 text-sm
-                                           font-semibold text-white shadow-sm
-                                           transition hover:bg-blue-700
-                                           sm:w-auto">
-
-                                <svg class="h-5 w-5"
-                                     viewBox="0 0 24 24"
-                                     fill="none"
-                                     stroke="currentColor"
-                                     stroke-width="2">
-
-                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-
-                                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>
-
-                                </svg>
-
-                                Borrow Book
-
-                            </button>
-
-                        </form>
-
-                    @else
-
-                        {{-- Reserve --}}
-                        <form method="POST"
-                              action="{{ route('books.reserve', $book) }}">
-
-                            @csrf
-
-                            <button type="submit"
-                                    class="inline-flex w-full items-center
-                                           justify-center gap-2 rounded-lg
-                                           bg-amber-500 px-5 py-2.5 text-sm
-                                           font-semibold text-white shadow-sm
-                                           transition hover:bg-amber-600
-                                           sm:w-auto">
-
-                                <svg class="h-5 w-5"
-                                     viewBox="0 0 24 24"
-                                     fill="none"
-                                     stroke="currentColor"
-                                     stroke-width="2">
-
-                                    <path d="M6 3h12v18l-6-3-6 3V3Z"/>
-
-                                </svg>
-
-                                Reserve Book
-
-                            </button>
-
-                        </form>
-
-                    @endif
-
-                @else
-
-                    <a href="{{ route('login') }}"
-                       class="inline-flex w-full items-center
-                              justify-center rounded-lg bg-blue-600
-                              px-5 py-2.5 text-sm font-semibold
-                              text-white shadow-sm transition
-                              hover:bg-blue-700 sm:w-auto">
-
-                        Login to Borrow
-
-                    </a>
-
-                @endauth
-
-
-                {{-- Browse More --}}
-                <a href="{{ url('/books') }}"
-                   class="inline-flex w-full items-center
-                          justify-center rounded-lg border
-                          border-slate-200 px-5 py-2.5 text-sm
-                          font-semibold text-slate-700 transition
-                          hover:bg-slate-50 sm:w-auto">
-
-                    Browse More
-
-                </a>
-
-            </div>
-
+        <div>
+            @if($activeBorrowing)
+                <h2 class="font-bold text-slate-900">You have this book</h2>
+                <p class="mt-1 text-sm {{ $activeBorrowing->due_date->isPast() ? 'text-red-600' : 'text-slate-500' }}">
+                    Due on {{ $activeBorrowing->due_date->format('M j, Y') }}
+                </p>
+            @elseif($book->available_quantity > 0)
+                <h2 class="font-bold text-slate-900">Ready to borrow?</h2>
+                <p class="mt-1 text-sm text-slate-500">This book is currently available.</p>
+            @else
+                <h2 class="font-bold text-slate-900">This book is currently borrowed</h2>
+                <p class="mt-1 text-sm text-slate-500">You can reserve it and we'll keep your request in the queue.</p>
+            @endif
         </div>
 
-    </section>
+        <div class="flex flex-col gap-2 sm:flex-row">
+            @auth
+            <a href="{{ route('membership.apply') }}"
+   class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+    Apply for membership to borrow
+</a>
+                @if($activeBorrowing)
+                    <form method="POST" action="{{ route('books.return', $book) }}"
+                          onsubmit="return confirm('Return this book?')">
+                        @csrf
+                        <button type="submit"
+                                class="inline-flex w-full items-center justify-center rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 sm:w-auto">
+                            Return Book
+                        </button>
+                    </form>
+                @elseif($book->available_quantity > 0)
+                    <form method="POST" action="{{ route('books.borrow', $book) }}">
+                        @csrf
+                        <button type="submit"
+                                class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 sm:w-auto">
+                            Borrow Book
+                        </button>
+                    </form>
+                @else
+                    <form method="POST" action="{{ route('books.reserve', $book) }}">
+                        @csrf
+                        <button type="submit"
+                                class="inline-flex w-full items-center justify-center rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600 sm:w-auto">
+                            Reserve Book
+                        </button>
+                    </form>
+                @endif
+            @else
+                <a href="{{ route('login') }}"
+                   class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 sm:w-auto">
+                    Login to Borrow
+                </a>
+            @endauth
+
+            <a href="{{ url('/books') }}"
+               class="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:w-auto">
+                Browse More
+            </a>
+        </div>
+    </div>
+</section>
 
 </div>
 

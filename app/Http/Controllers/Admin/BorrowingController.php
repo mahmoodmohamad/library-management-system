@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Book;
 use App\Models\Borrowing;
 use App\Models\Member;
+use App\Http\Controllers\Controller;
 use App\Services\BorrowingService;
 use DomainException;
 use Illuminate\Http\Request;

@@ -37,7 +37,7 @@ class BookController extends Controller
 
     public function create()
     {
-        return view('books.form', $this->formData(new Book()));
+        return view('admin.books.form', $this->formData(new Book()));
     }
 
     public function edit(Book $book)

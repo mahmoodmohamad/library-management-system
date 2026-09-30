@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Book extends Model
 {
-    //
     use HasFactory;
+
     protected $fillable = [
         'title',
         'isbn',
@@ -19,11 +19,19 @@ class Book extends Model
         'available_quantity',
         'total_copies',
         'shelf_location',
-        'category_id'
+        'category_id',
     ];
+
+    protected $casts = [
+        'publication_year' => 'integer',
+        'pages' => 'integer',
+        'available_quantity' => 'integer',
+        'total_copies' => 'integer',
+    ];
+
     public function category()
     {
-        return $this->belongsTo(Category::class, 'category_id');
+        return $this->belongsTo(Category::class);
     }
 
     public function publisher()
@@ -33,13 +41,14 @@ class Book extends Model
 
     public function authors()
     {
-        return $this->belongsToMany(Author::class, 'author_book');
-
+        return $this->belongsToMany(
+            Author::class,
+            'author_book'
+        );
     }
-  public function borrowings()
-{
-    return $this->hasMany(Borrowing::class);
-}
 
+    public function borrowings()
+    {
+        return $this->hasMany(Borrowing::class);
+    }
 }
-

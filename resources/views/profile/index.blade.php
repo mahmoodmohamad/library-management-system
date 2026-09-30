@@ -48,7 +48,7 @@
                                 rounded-2xl border-4 border-white bg-blue-100
                                 text-3xl font-bold text-blue-700 shadow-sm">
 
-                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                        {{ strtoupper(substr( auth()->user()->name, 0, 1)) }}
 
                     </div>
 
@@ -56,11 +56,11 @@
                     <div class="pb-1">
 
                         <h2 class="text-2xl font-bold text-slate-900">
-                            {{ auth()->user()->name }}
+                           {{ $user->name }}
                         </h2>
 
                         <p class="mt-1 text-sm text-slate-500">
-                            {{ auth()->user()->email }}
+                        {{ $user->email }}
                         </p>
 
                     </div>
@@ -461,7 +461,148 @@
 
     </div>
 
+@if($member)
 
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+        <div class="border-b border-slate-100 px-6 py-5">
+
+            <h2 class="text-lg font-bold text-slate-900">
+                Membership Information
+            </h2>
+
+            <p class="mt-1 text-sm text-slate-500">
+                Your library membership details.
+            </p>
+
+        </div>
+
+        <div class="grid gap-6 px-6 py-6 sm:grid-cols-2 lg:grid-cols-3">
+
+            <div>
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Member Number
+                </p>
+                <p class="mt-1 font-medium text-slate-800">
+                    {{ $member->member_number }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Membership Type
+                </p>
+                <p class="mt-1 font-medium capitalize text-slate-800">
+                    {{ $member->membership_type }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Status
+                </p>
+                <p class="mt-1 font-medium capitalize text-slate-800">
+                    {{ $member->status }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Phone
+                </p>
+                <p class="mt-1 font-medium text-slate-800">
+                    {{ $member->phone ?: '—' }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Date of Birth
+                </p>
+                <p class="mt-1 font-medium text-slate-800">
+                    {{ $member->date_of_birth?->format('F j, Y') ?? '—' }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Membership Start
+                </p>
+                <p class="mt-1 font-medium text-slate-800">
+                    {{ $member->membership_start_date?->format('F j, Y') ?? '—' }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Membership Expiry
+                </p>
+                <p class="mt-1 font-medium text-slate-800">
+                    {{ $member->membership_expiry_date?->format('F j, Y') ?? '—' }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Emergency Contact
+                </p>
+                <p class="mt-1 font-medium text-slate-800">
+                    {{ $member->emergency_contact_name ?: '—' }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Emergency Phone
+                </p>
+                <p class="mt-1 font-medium text-slate-800">
+                    {{ $member->emergency_contact_phone ?: '—' }}
+                </p>
+            </div>
+
+            <div class="sm:col-span-2 lg:col-span-3">
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Address
+                </p>
+                <p class="mt-1 font-medium text-slate-800">
+                    {{ $member->address ?: '—' }}
+                </p>
+            </div>
+
+            <div class="sm:col-span-2 lg:col-span-3">
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Notes
+                </p>
+                <p class="mt-1 text-slate-700">
+                    {{ $member->notes ?: '—' }}
+                </p>
+            </div>
+
+        </div>
+
+    </section>
+
+@else
+
+    <section class="rounded-2xl border border-amber-200 bg-amber-50 p-6">
+
+        <h2 class="font-semibold text-amber-900">
+            You are not a library member yet
+        </h2>
+
+        <p class="mt-1 text-sm text-amber-700">
+            Your account exists, but you do not currently have a library membership.
+        </p>
+
+        <a href="{{ route('membership.apply') }}"
+           class="mt-4 inline-flex rounded-lg bg-blue-600 px-4 py-2.5
+                  text-sm font-semibold text-white hover:bg-blue-700">
+            Apply for Membership
+        </a>
+
+    </section>
+
+@endif
     {{-- =========================================================
          MY BORROWINGS
     ========================================================== --}}
