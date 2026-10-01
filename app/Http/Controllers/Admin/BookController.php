@@ -10,6 +10,7 @@ use App\Models\Publisher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -17,6 +18,8 @@ class BookController extends Controller
 {
     public function index(Request $request)
     {
+        Gate::authorize('viewAny', Book::class);
+
         $books = Book::with(['category', 'publisher', 'authors'])
             ->when($request->q, fn ($query, $s) => $query->where(
                 fn ($w) => $w->where('title', 'like', "%{$s}%")->orWhere('isbn', 'like', "%{$s}%")
@@ -30,6 +33,8 @@ class BookController extends Controller
 
     public function show(Request $request, Book $book)
     {
+        Gate::authorize('view', $book);
+
         $book->load(['category', 'publisher', 'authors']);
 
         return $request->expectsJson() ? $book : view('admin.books.show', compact('book'));
@@ -37,16 +42,22 @@ class BookController extends Controller
 
     public function create()
     {
+        Gate::authorize('create', Book::class);
+
         return view('admin.books.form', $this->formData(new Book()));
     }
 
     public function edit(Book $book)
     {
+        Gate::authorize('update', $book);
+
         return view('admin.books.form', $this->formData($book));
     }
 
     public function store(Request $request)
     {
+        Gate::authorize('create', Book::class);
+
         $data = $request->validate($this->rules());
 
         $book = DB::transaction(function () use ($data) {
@@ -67,6 +78,8 @@ class BookController extends Controller
 
     public function update(Request $request, Book $book)
     {
+        Gate::authorize('update', $book);
+
         $data = $request->validate($this->rules($book));
 
         $borrowed = $book->total_copies - $book->available_quantity;
@@ -93,6 +106,8 @@ class BookController extends Controller
 
     public function destroy(Request $request, Book $book)
     {
+        Gate::authorize('delete', $book);
+
         if ($book->borrowings()->whereNull('returned_at')->exists()) {
             throw ValidationException::withMessages([
                 'book' => 'This book has copies that are still borrowed.',

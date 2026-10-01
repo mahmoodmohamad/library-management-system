@@ -11,11 +11,13 @@ use App\Models\User;
 use Illuminate\Support\Str;
 use App\Models\MembershipApplication;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class MemberController extends Controller
 {
     public function index(Request $request)
     {
+        Gate::authorize('viewAny', Member::class);
         $members = Member::withCount(['borrowings as active_borrowings_count' => fn ($q) => $q->whereNull('returned_at')])
             ->when($request->q, fn ($query, $s) => $query->where(
                 fn ($w) => $w->where('first_name', 'like', "%{$s}%")
@@ -32,6 +34,7 @@ class MemberController extends Controller
 
     public function show(Request $request, Member $member)
     {
+        Gate::authorize('view', $member);
         $member->load(['borrowings' => fn ($q) => $q->with('book')->latest('borrowed_at')]);
 
         return $request->expectsJson() ? $member : view('admin.members.show', compact('member'));
@@ -41,13 +44,14 @@ class MemberController extends Controller
 
     public function edit(Member $member)
     {
+        Gate::authorize('update', $member);
         return view('admin.members.form', compact('member'));
     }
 
     
 
     public function update(Request $request, Member $member)
-    {
+    {Gate::authorize('update', $member);
         $data = $request->validate($this->rules($member));
         $data['outstanding_fines'] ??= 0;
 
@@ -61,7 +65,7 @@ class MemberController extends Controller
     }
 
     public function destroy(Request $request, Member $member)
-    {
+    {Gate::authorize('delete', $member);
         if ($member->borrowings()->whereNull('returned_at')->exists()) {
             throw ValidationException::withMessages([
                 'member' => 'This member still has borrowed books.',
@@ -98,7 +102,7 @@ class MemberController extends Controller
         ];
     }
     public function pending()
-{
+{Gate::authorize('viewAny', MembershipApplication::class);
     $applications = MembershipApplication::with('user')
         ->where('status', 'pending')
         ->latest()
@@ -108,7 +112,7 @@ class MemberController extends Controller
 }
 
 public function create(Request $request)
-{
+{Gate::authorize('create', Member::class);
     $member = new Member();
     $application = null;
 
@@ -140,7 +144,7 @@ public function create(Request $request)
 }
 
 public function store(Request $request)
-{
+{Gate::authorize('create', Member::class);
     $application = $request->filled('application_id')
         ? MembershipApplication::with('user')->where('status', 'pending')->findOrFail($request->application_id)
         : null;
@@ -168,7 +172,7 @@ public function store(Request $request)
 }
 
 public function rejectApplication(MembershipApplication $application)
-{
+{Gate::authorize('update', $application);
     $application->update(['status' => 'rejected']);
 
     return back()->with('success', 'Application rejected.');

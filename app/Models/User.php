@@ -43,4 +43,8 @@ class User extends Authenticatable
 {
     return $this->hasOne(MembershipApplication::class);
 }
+public function hasRole(string ...$roles): bool
+{
+    return in_array($this->role?->name, $roles, true);
+}
 }
