@@ -12,8 +12,11 @@ class RoleSeeder extends Seeder
      * Run the database seeds.
      */
     public function run(): void
-    {
-        //
-        Role::factory()->count(10)->create();
+{
+    foreach (['admin', 'librarian', 'member'] as $name) {
+        Role::firstOrCreate([
+            'name' => $name,
+        ]);
     }
+}
 }

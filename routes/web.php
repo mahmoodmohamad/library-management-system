@@ -21,7 +21,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])
     ->name('home');
+Route::get('/books', [UserBookController::class, 'index'])
+    ->name('books.index');
 
+Route::get('/books/{book}', [UserBookController::class, 'show'])
+    ->name('books.show');
 Route::get('/books/{book}', [UserBookController::class, 'show'])
     ->name('books.show');
 

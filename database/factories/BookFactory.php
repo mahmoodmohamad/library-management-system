@@ -21,19 +21,19 @@ class BookFactory extends Factory
      */
     public function definition(): array
     {
-        $totalCopies = $this->faker->numberBetween(10, 100);
+       $totalCopies = $this->faker->numberBetween(10, 100);
 
-        return [
-            'title' => $this->faker->sentence(3),
-            'isbn' => $this->faker->unique()->isbn13(),
-            'publisher_id' => Publisher::factory(),
-            'description' => $this->faker->paragraph(4),
-            'publication_year' => $this->faker->year(),
-            'pages' => $this->faker->numberBetween(100, 600),
-            'available_quantity' => $this->faker->numberBetween(0, $totalCopies),
-            'total_copies' => $totalCopies,
-            'shelf_location' => $this->faker->bothify('Shelf-??-###'),
-            'category_id' => Category::factory(),
-        ];
+return [
+    'title' => $this->faker->sentence(3),
+    'isbn' => $this->faker->unique()->isbn13(),
+    'publisher_id' => Publisher::factory(),
+    'description' => $this->faker->paragraph(4),
+    'publication_year' => $this->faker->year(),
+    'pages' => $this->faker->numberBetween(100, 600),
+    'available_quantity' => $totalCopies,
+    'total_copies' => $totalCopies,
+    'shelf_location' => $this->faker->bothify('Shelf-??-###'),
+    'category_id' => Category::factory(),
+];
     }
 }

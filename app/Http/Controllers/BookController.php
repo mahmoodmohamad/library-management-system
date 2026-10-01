@@ -17,6 +17,14 @@ class BookController extends Controller
         private BorrowingService $borrowingService
     ) {
     }
+    public function index(): View
+{
+    $books = Book::with(['authors', 'category', 'publisher'])
+        ->latest()
+        ->paginate(12);
+
+    return view('books.index', compact('books'));
+}
 
     public function show(Book $book): View
 {
