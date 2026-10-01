@@ -43,4 +43,8 @@ class Member extends Model
 {
     return $this->belongsToMany(Book::class, 'borrowings');
 }
+public function reservations()
+{
+    return $this->hasMany(Reservation::class);
+}
 }

@@ -10,13 +10,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
-
+use App\Services\ReservationService;
 class BookController extends Controller
 {
     public function __construct(
-        private BorrowingService $borrowingService
-    ) {
-    }
+    private BorrowingService $borrowingService,
+    private ReservationService $reservationService
+) {
+}
     public function index(): View
 {
     $books = Book::with(['authors', 'category', 'publisher'])
@@ -99,10 +100,26 @@ class BookController extends Controller
             ->with('success', 'Book returned successfully.');
     }
 
-    public function reserve(Book $book): RedirectResponse
-    {
-        return redirect()
-            ->route('books.show', $book)
-            ->with('error', 'Reservation is not implemented yet.');
+   public function reserve(Book $book): RedirectResponse
+{
+    $member = Auth::user()->member;
+
+    if (!$member) {
+        throw ValidationException::withMessages([
+            'reservation' => 'Your account is not linked to a library member.',
+        ]);
     }
+
+    try {
+        $this->reservationService->reserve($member, $book);
+    } catch (DomainException $e) {
+        throw ValidationException::withMessages([
+            'reservation' => $e->getMessage(),
+        ]);
+    }
+
+    return redirect()
+        ->route('books.show', $book)
+        ->with('success', 'Book reserved. We will keep your place in the queue.');
+}
 }
