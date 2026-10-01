@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Services\BorrowingService;
 use DomainException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class BorrowingController extends Controller
@@ -18,7 +19,7 @@ class BorrowingController extends Controller
     }
 
     public function index(Request $request)
-    {
+    {	Gate::authorize('viewAny', Borrowing::class);
         $borrowings = Borrowing::with(['member', 'book'])
             ->when($request->q, function ($query, $search) {
                 $query->where(function ($query) use ($search) {
@@ -68,7 +69,7 @@ class BorrowingController extends Controller
     }
 
     public function store(Request $request)
-    {
+    {Gate::authorize('create', Borrowing::class);
         $data = $request->validate([
             'member_id' => 'required|exists:members,id',
             'book_id' => 'required|exists:books,id',
@@ -101,7 +102,7 @@ class BorrowingController extends Controller
     }
 
     public function giveBack(Request $request, Borrowing $borrowing)
-    {
+    {Gate::authorize('update', $borrowing);
         try {
             $borrowing = $this->service->returnBook($borrowing);
         } catch (DomainException $e) {
