@@ -27,7 +27,7 @@ class BookAuthorizationTest extends TestCase
             ->delete(route('admin.books.destroy', $book))
             ->assertRedirect(route('admin.books.index'));
 
-        $this->assertModelMissing($book);
+        $this->assertSoftDeleted($book);
     }
 
     public function test_librarian_can_view_but_not_delete(): void

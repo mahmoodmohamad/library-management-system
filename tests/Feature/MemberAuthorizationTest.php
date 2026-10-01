@@ -27,7 +27,7 @@ class MemberAuthorizationTest extends TestCase
             ->delete(route('admin.members.destroy', $member))
             ->assertRedirect(route('admin.members.index'));
 
-        $this->assertModelMissing($member);
+        $this->assertSoftDeleted($member);
     }
 
     public function test_librarian_can_view_but_not_delete_member(): void
@@ -58,5 +58,22 @@ class MemberAuthorizationTest extends TestCase
         $this->actingAs($this->userWithRole('member'))
             ->get(route('admin.members.index'))
             ->assertForbidden();
+    }
+        public function test_deleting_member_keeps_borrowing_history(): void
+    {
+        $member = Member::factory()->create();
+        $borrowing = \App\Models\Borrowing::factory()->create([
+            'member_id' => $member->id,
+            'returned_at' => today(),
+            'status' => 'returned',
+            'fine_amount' => 0,
+        ]);
+
+        $this->actingAs($this->userWithRole('admin'))
+            ->delete(route('admin.members.destroy', $member))
+            ->assertRedirect(route('admin.members.index'));
+
+        $this->assertSoftDeleted($member);
+        $this->assertModelExists($borrowing);
     }
 }
