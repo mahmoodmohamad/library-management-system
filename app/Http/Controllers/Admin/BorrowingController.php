@@ -20,9 +20,33 @@ class BorrowingController extends Controller
     public function index(Request $request)
     {
         $borrowings = Borrowing::with(['member', 'book'])
-            ->when($request->status === 'out', fn ($q) => $q->whereNull('returned_at'))
-            ->when($request->status === 'overdue', fn ($q) => $q->whereNull('returned_at')->where('due_date', '<', today()))
-            ->when($request->status === 'returned', fn ($q) => $q->whereNotNull('returned_at'))
+            ->when($request->q, function ($query, $search) {
+                $query->where(function ($query) use ($search) {
+
+                    $query->whereHas('member', function ($member) use ($search) {
+                        $member->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('member_number', 'like', "%{$search}%");
+                    })
+
+                    ->orWhereHas('book', function ($book) use ($search) {
+                        $book->where('title', 'like', "%{$search}%")
+                            ->orWhere('isbn', 'like', "%{$search}%");
+                    });
+
+                });
+            })
+            ->when($request->status === 'out', fn ($q) =>
+                $q->whereNull('returned_at')
+            )
+            ->when($request->status === 'overdue', fn ($q) =>
+                $q->whereNull('returned_at')
+                    ->where('due_date', '<', today())
+            )
+            ->when($request->status === 'returned', fn ($q) =>
+                $q->whereNotNull('returned_at')
+            )
             ->latest('borrowed_at')
             ->latest('id')
             ->paginate(15)
@@ -34,8 +58,12 @@ class BorrowingController extends Controller
 
         return view('admin.borrowings.index', [
             'borrowings' => $borrowings,
-            'members' => Member::where('status', 'active')->orderBy('first_name')->get(),
-            'books' => Book::where('available_quantity', '>', 0)->orderBy('title')->get(),
+            'members' => Member::where('status', 'active')
+                ->orderBy('first_name')
+                ->get(),
+            'books' => Book::where('available_quantity', '>', 0)
+                ->orderBy('title')
+                ->get(),
         ]);
     }
 
@@ -52,15 +80,24 @@ class BorrowingController extends Controller
                 Book::findOrFail($data['book_id'])
             );
         } catch (DomainException $e) {
-            throw ValidationException::withMessages(['borrowing' => $e->getMessage()]);
+            throw ValidationException::withMessages([
+                'borrowing' => $e->getMessage(),
+            ]);
         }
 
         if ($request->expectsJson()) {
-            return response()->json($borrowing->load(['member', 'book']), 201);
+            return response()->json(
+                $borrowing->load(['member', 'book']),
+                201
+            );
         }
 
-        return redirect()->route('admin.borrowings.index')
-            ->with('success', 'Book borrowed. Due on '.$borrowing->due_date->toDateString().'.');
+        return redirect()
+            ->route('admin.borrowings.index')
+            ->with(
+                'success',
+                'Book borrowed. Due on '.$borrowing->due_date->toDateString().'.'
+            );
     }
 
     public function giveBack(Request $request, Borrowing $borrowing)
@@ -68,7 +105,9 @@ class BorrowingController extends Controller
         try {
             $borrowing = $this->service->returnBook($borrowing);
         } catch (DomainException $e) {
-            throw ValidationException::withMessages(['borrowing' => $e->getMessage()]);
+            throw ValidationException::withMessages([
+                'borrowing' => $e->getMessage(),
+            ]);
         }
 
         if ($request->expectsJson()) {
@@ -76,10 +115,13 @@ class BorrowingController extends Controller
         }
 
         $message = 'Book returned.';
+
         if ((float) $borrowing->fine_amount > 0) {
             $message .= ' Late fine: '.$borrowing->fine_amount.'.';
         }
 
-        return redirect()->route('admin.borrowings.index')->with('success', $message);
+        return redirect()
+            ->route('admin.borrowings.index')
+            ->with('success', $message);
     }
 }

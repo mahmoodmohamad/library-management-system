@@ -20,6 +20,86 @@
     </div>
 
 
+    {{-- Search & Filters --}}
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+        {{-- Search --}}
+        <form method="GET"
+              action="{{ route('admin.borrowings.index') }}"
+              class="flex w-full gap-2 sm:max-w-md">
+
+            <input
+                type="text"
+                name="q"
+                value="{{ request('q') }}"
+                placeholder="Search member or book..."
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2
+                       text-sm text-slate-900 outline-none
+                       focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+
+            @if(request('status'))
+                <input type="hidden" name="status" value="{{ request('status') }}">
+            @endif
+
+            <button type="submit"
+                    class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium
+                           text-white hover:bg-blue-700">
+
+                Search
+
+            </button>
+
+            @if(request('q'))
+                <a href="{{ route(
+                    'admin.borrowings.index',
+                    request('status')
+                        ? ['status' => request('status')]
+                        : []
+                ) }}"
+                   class="rounded-lg border border-slate-200 bg-white px-4 py-2
+                          text-sm font-medium text-slate-600 hover:bg-slate-50">
+
+                    Clear
+
+                </a>
+            @endif
+
+        </form>
+
+
+        {{-- Status Filters --}}
+        <div class="flex flex-wrap items-center gap-2">
+
+            @foreach ([
+                '' => 'All',
+                'out' => 'Currently Out',
+                'overdue' => 'Overdue',
+                'returned' => 'Returned'
+            ] as $value => $label)
+
+                <a href="{{ route(
+                    'admin.borrowings.index',
+                    array_filter([
+                        'status' => $value ?: null,
+                        'q' => request('q'),
+                    ])
+                ) }}"
+                   class="rounded-lg px-3 py-2 text-sm font-medium transition
+                   {{ (string) request('status') === (string) $value
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' }}">
+
+                    {{ $label }}
+
+                </a>
+
+            @endforeach
+
+        </div>
+
+    </div>
+
+
     {{-- Borrow Book --}}
     <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
 
@@ -160,34 +240,6 @@
             </div>
 
         </form>
-
-    </div>
-
-
-    {{-- Filters --}}
-    <div class="flex flex-wrap items-center gap-2">
-
-        @foreach ([
-            '' => 'All',
-            'out' => 'Currently Out',
-            'overdue' => 'Overdue',
-            'returned' => 'Returned'
-        ] as $value => $label)
-
-            <a href="{{ route(
-                'admin.borrowings.index',
-                $value ? ['status' => $value] : []
-            ) }}"
-               class="rounded-lg px-3 py-2 text-sm font-medium transition
-               {{ (string) request('status') === (string) $value
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' }}">
-
-                {{ $label }}
-
-            </a>
-
-        @endforeach
 
     </div>
 
