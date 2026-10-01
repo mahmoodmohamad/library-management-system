@@ -269,11 +269,29 @@
 
 
     {{-- Borrow / Reserve Action --}}
-   <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+   @php
+    $currentUser = auth()->user();
+    $currentMember = $currentUser?->member;
+    $application = $currentUser?->membershipApplication;
+    $btn = 'inline-flex w-full items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition sm:w-auto';
+@endphp
+
+<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
     <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
 
         <div>
-            @if($activeBorrowing)
+            @guest
+                <h2 class="font-bold text-slate-900">Sign in to borrow</h2>
+                <p class="mt-1 text-sm text-slate-500">You need an account and a library membership to borrow books.</p>
+            @elseif(! $currentMember)
+                @if($application?->status === 'pending')
+                    <h2 class="font-bold text-slate-900">Membership under review</h2>
+                    <p class="mt-1 text-sm text-slate-500">You can borrow books once the library approves your application.</p>
+                @else
+                    <h2 class="font-bold text-slate-900">Membership required</h2>
+                    <p class="mt-1 text-sm text-slate-500">Apply for a library membership to borrow books.</p>
+                @endif
+            @elseif($activeBorrowing)
                 <h2 class="font-bold text-slate-900">You have this book</h2>
                 <p class="mt-1 text-sm {{ $activeBorrowing->due_date->isPast() ? 'text-red-600' : 'text-slate-500' }}">
                     Due on {{ $activeBorrowing->due_date->format('M j, Y') }}
@@ -284,47 +302,35 @@
             @else
                 <h2 class="font-bold text-slate-900">This book is currently borrowed</h2>
                 <p class="mt-1 text-sm text-slate-500">You can reserve it and we'll keep your request in the queue.</p>
-            @endif
+            @endguest
         </div>
 
         <div class="flex flex-col gap-2 sm:flex-row">
-            @auth
-            <a href="{{ route('membership.apply') }}"
-   class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
-    Apply for membership to borrow
-</a>
-                @if($activeBorrowing)
-                    <form method="POST" action="{{ route('books.return', $book) }}"
-                          onsubmit="return confirm('Return this book?')">
-                        @csrf
-                        <button type="submit"
-                                class="inline-flex w-full items-center justify-center rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 sm:w-auto">
-                            Return Book
-                        </button>
-                    </form>
-                @elseif($book->available_quantity > 0)
-                    <form method="POST" action="{{ route('books.borrow', $book) }}">
-                        @csrf
-                        <button type="submit"
-                                class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 sm:w-auto">
-                            Borrow Book
-                        </button>
-                    </form>
-                @else
-                    <form method="POST" action="{{ route('books.reserve', $book) }}">
-                        @csrf
-                        <button type="submit"
-                                class="inline-flex w-full items-center justify-center rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600 sm:w-auto">
-                            Reserve Book
-                        </button>
-                    </form>
+            @guest
+                <a href="{{ route('login') }}" class="{{ $btn }} bg-blue-600 hover:bg-blue-700">Login to Borrow</a>
+            @elseif(! $currentMember)
+                @if($application?->status !== 'pending')
+                    <a href="{{ route('membership.apply') }}" class="{{ $btn }} bg-blue-600 hover:bg-blue-700">
+                        Apply for membership
+                    </a>
                 @endif
+            @elseif($activeBorrowing)
+                <form method="POST" action="{{ route('books.return', $book) }}"
+                      onsubmit="return confirm('Return this book?')">
+                    @csrf
+                    <button type="submit" class="{{ $btn }} bg-emerald-600 hover:bg-emerald-700">Return Book</button>
+                </form>
+            @elseif($book->available_quantity > 0)
+                <form method="POST" action="{{ route('books.borrow', $book) }}">
+                    @csrf
+                    <button type="submit" class="{{ $btn }} bg-blue-600 hover:bg-blue-700">Borrow Book</button>
+                </form>
             @else
-                <a href="{{ route('login') }}"
-                   class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 sm:w-auto">
-                    Login to Borrow
-                </a>
-            @endauth
+                <form method="POST" action="{{ route('books.reserve', $book) }}">
+                    @csrf
+                    <button type="submit" class="{{ $btn }} bg-amber-500 hover:bg-amber-600">Reserve Book</button>
+                </form>
+            @endguest
 
             <a href="{{ url('/books') }}"
                class="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:w-auto">

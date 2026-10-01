@@ -27,12 +27,12 @@ class Borrowing extends Model
     ];
 
     public function member()
-    {
-        return $this->belongsTo(Member::class);
-    }
+{
+    return $this->belongsTo(Member::class)->withTrashed();
+}
 
-    public function book()
-    {
-        return $this->belongsTo(Book::class);
-    }
+public function book()
+{
+    return $this->belongsTo(Book::class)->withTrashed();
+}
 }
