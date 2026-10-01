@@ -2,343 +2,256 @@
 
 @section('title', $book->title)
 
+@php
+    $viewer = auth()->user();
+    $viewerMember = $viewer?->member;
+    $application = $viewer?->membershipApplication;
+    $activeBorrowing = $activeBorrowing ?? null;
+    $activeReservation = $activeReservation ?? null;
+    $available = $book->available_quantity;
+
+    // One state drives the whole action card.
+    $state = match (true) {
+        ! $viewer                                  => 'guest',
+        ! $viewerMember && $application?->status === 'pending'  => 'pending',
+        ! $viewerMember && $application?->status === 'rejected' => 'rejected',
+        ! $viewerMember                            => 'no_member',
+        (bool) $activeBorrowing                    => 'borrowed',
+        $available > 0                             => 'can_borrow',
+        (bool) $activeReservation                  => 'reserved',
+        default                                    => 'can_reserve',
+    };
+
+    $daysLeft = $activeBorrowing
+        ? (int) today()->diffInDays($activeBorrowing->due_date, false)
+        : null;
+
+    $btn = 'inline-flex w-full items-center justify-center rounded-lg px-5 py-3 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2';
+    $btnPrimary = $btn.' bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500';
+    $btnOutline = $btn.' border border-slate-300 bg-white text-slate-700 shadow-none hover:bg-slate-50 focus:ring-slate-300';
+@endphp
+
 @section('content')
 
 <div class="space-y-6">
 
     {{-- Back --}}
-    <div>
-        <a href="{{ url('/books') }}"
-           class="inline-flex items-center gap-2 text-sm font-medium
-                  text-slate-500 transition hover:text-blue-600">
+    <a href="{{ url('/books') }}"
+       class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-blue-600">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m15 18-6-6 6-6"/>
+        </svg>
+        Back to books
+    </a>
 
-            <svg class="h-4 w-4"
-                 viewBox="0 0 24 24"
-                 fill="none"
-                 stroke="currentColor"
-                 stroke-width="2">
+    <div class="grid gap-x-10 gap-y-8 lg:grid-cols-3">
 
-                <path d="m15 18-6-6 6-6"/>
+        {{-- ================= Header ================= --}}
+        <header class="flex gap-6 lg:col-span-2">
 
-            </svg>
-
-            Back to Books
-
-        </a>
-    </div>
-
-
-    {{-- Book Details --}}
-    <section class="overflow-hidden rounded-2xl border border-slate-200
-                    bg-white shadow-sm">
-
-        <div class="grid lg:grid-cols-3">
-
-            {{-- Book Cover Placeholder --}}
-            <div class="flex min-h-[420px] items-center justify-center
-                        bg-slate-100 p-8">
-
-                <div class="flex h-72 w-52 items-center justify-center
-                            rounded-xl bg-white shadow-lg">
-
-                    <div class="px-6 text-center">
-
-                        <svg class="mx-auto h-16 w-16 text-blue-200"
-                             viewBox="0 0 24 24"
-                             fill="none"
-                             stroke="currentColor"
-                             stroke-width="1.5">
-
-                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-
-                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>
-
-                        </svg>
-
-                        <p class="mt-4 text-sm font-medium text-slate-400">
-                            Library Book
-                        </p>
-
-                    </div>
-
-                </div>
-
+            {{-- Cover placeholder --}}
+            <div class="hidden h-44 w-32 shrink-0 items-center justify-center rounded-xl
+                        border border-slate-200 bg-slate-100 sm:flex">
+                <svg class="h-12 w-12 text-slate-300" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.5">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>
+                </svg>
             </div>
 
+            <div class="min-w-0">
 
-            {{-- Information --}}
-            <div class="p-6 sm:p-8 lg:col-span-2">
-
-                {{-- Category --}}
                 @if($book->category)
-
-                    <span class="inline-flex rounded-full bg-blue-50
-                                 px-3 py-1 text-xs font-semibold
-                                 text-blue-700">
-
-                        {{ $book->category->name }}
-
-                    </span>
-
+                    <p class="text-sm font-semibold text-blue-600">{{ $book->category->name }}</p>
                 @endif
 
-
-                {{-- Title --}}
-                <h1 class="mt-4 text-3xl font-bold tracking-tight
-                           text-slate-900 sm:text-4xl">
-
+                <h1 class="mt-1 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
                     {{ $book->title }}
-
                 </h1>
 
-
-                {{-- Authors --}}
                 @if($book->authors->isNotEmpty())
-
-                    <div class="mt-4">
-
-                        <p class="text-sm text-slate-500">
-                            Written by
-                        </p>
-
-                        <div class="mt-1 flex flex-wrap gap-x-2 gap-y-1">
-
-                            @foreach($book->authors as $author)
-
-                                <span class="font-semibold text-slate-800">
-
-                                    {{ $author->name }}
-
-                                    @if(!$loop->last)
-                                        <span class="text-slate-400">,</span>
-                                    @endif
-
-                                </span>
-
-                            @endforeach
-
-                        </div>
-
-                    </div>
-
+                    <p class="mt-2 text-base text-slate-600">
+                        by {{ $book->authors->pluck('name')->join(', ') }}
+                    </p>
                 @endif
 
-
                 {{-- Availability --}}
-                <div class="mt-8 rounded-xl border border-slate-200
-                            bg-slate-50 p-4">
-
-                    <div class="flex items-center justify-between gap-4">
-
-                        <div>
-
-                            <p class="text-sm font-semibold text-slate-800">
-                                Availability
-                            </p>
-
-                            @if($book->available_quantity > 0)
-
-                                <p class="mt-1 text-sm text-slate-500">
-
-                                    {{ $book->available_quantity }}
-
-                                    {{ $book->available_quantity === 1
-                                        ? 'copy'
-                                        : 'copies' }}
-
-                                    available
-
-                                </p>
-
-                            @else
-
-                                <p class="mt-1 text-sm text-red-600">
-                                    Currently unavailable
-                                </p>
-
-                            @endif
-
-                        </div>
-
-
-                        @if($book->available_quantity > 0)
-
-                            <span class="inline-flex items-center gap-2
-                                         rounded-full bg-emerald-50 px-3 py-1.5
-                                         text-xs font-semibold text-emerald-700">
-
-                                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-
-                                Available
-
-                            </span>
-
-                        @else
-
-                            <span class="inline-flex items-center gap-2
-                                         rounded-full bg-red-50 px-3 py-1.5
-                                         text-xs font-semibold text-red-700">
-
-                                <span class="h-2 w-2 rounded-full bg-red-500"></span>
-
-                                Unavailable
-
-                            </span>
-
-                        @endif
-
-                    </div>
-
-                </div>
-
-
-                {{-- Book Information --}}
-                <div class="mt-8">
-
-                    <h2 class="text-lg font-bold text-slate-900">
-                        Book Information
-                    </h2>
-
-                    <dl class="mt-4 divide-y divide-slate-100
-                              rounded-xl border border-slate-200">
-
-                        {{-- ISBN --}}
-                        <div class="grid gap-1 px-4 py-3 sm:grid-cols-3">
-
-                            <dt class="text-sm font-medium text-slate-500">
-                                ISBN
-                            </dt>
-
-                            <dd class="text-sm text-slate-800 sm:col-span-2">
-                                {{ $book->isbn ?: '—' }}
-                            </dd>
-
-                        </div>
-
-
-                        {{-- Publisher --}}
-                        <div class="grid gap-1 px-4 py-3 sm:grid-cols-3">
-
-                            <dt class="text-sm font-medium text-slate-500">
-                                Publisher
-                            </dt>
-
-                            <dd class="text-sm text-slate-800 sm:col-span-2">
-                                {{ $book->publisher?->name ?? '—' }}
-                            </dd>
-
-                        </div>
-
-
-                        {{-- Category --}}
-                        <div class="grid gap-1 px-4 py-3 sm:grid-cols-3">
-
-                            <dt class="text-sm font-medium text-slate-500">
-                                Category
-                            </dt>
-
-                            <dd class="text-sm text-slate-800 sm:col-span-2">
-                                {{ $book->category?->name ?? '—' }}
-                            </dd>
-
-                        </div>
-
-
-                        {{-- Total Copies --}}
-                        <div class="grid gap-1 px-4 py-3 sm:grid-cols-3">
-
-                            <dt class="text-sm font-medium text-slate-500">
-                                Total Copies
-                            </dt>
-
-                            <dd class="text-sm text-slate-800 sm:col-span-2">
-                                {{ $book->total_copies }}
-                            </dd>
-
-                        </div>
-
-                    </dl>
-
+                <div class="mt-5 flex items-center gap-2 text-sm">
+                    @if($available > 0)
+                        <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                        <span class="font-semibold text-emerald-700">Available</span>
+                        <span class="text-slate-500">
+                            · {{ $available }} of {{ $book->total_copies }}
+                            {{ $book->total_copies === 1 ? 'copy' : 'copies' }} on the shelf
+                        </span>
+                    @else
+                        <span class="h-2.5 w-2.5 rounded-full bg-red-500"></span>
+                        <span class="font-semibold text-red-700">Unavailable</span>
+                        <span class="text-slate-500">· all copies are on loan</span>
+                    @endif
                 </div>
 
             </div>
-
-        </div>
-
-    </section>
+        </header>
 
 
-    {{-- Borrow / Reserve Action --}}
-   @php
-    $currentUser = auth()->user();
-    $currentMember = $currentUser?->member;
-    $application = $currentUser?->membershipApplication;
-    $btn = 'inline-flex w-full items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition sm:w-auto';
-@endphp
+        {{-- ================= Action card ================= --}}
+        <aside class="lg:col-start-3 lg:row-span-2 lg:row-start-1">
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
 
-<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-    <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                @switch($state)
 
-        <div>
-            @guest
-                <h2 class="font-bold text-slate-900">Sign in to borrow</h2>
-                <p class="mt-1 text-sm text-slate-500">You need an account and a library membership to borrow books.</p>
-            @elseif(! $currentMember)
-                @if($application?->status === 'pending')
-                    <h2 class="font-bold text-slate-900">Membership under review</h2>
-                    <p class="mt-1 text-sm text-slate-500">You can borrow books once the library approves your application.</p>
+                    @case('guest')
+                        <h2 class="text-lg font-bold text-slate-900">Sign in to borrow</h2>
+                        <p class="mt-1 text-sm text-slate-500">
+                            You need an account and a library membership to borrow books.
+                        </p>
+                        <div class="mt-5 space-y-2">
+                            <a href="{{ route('login') }}" class="{{ $btnPrimary }}">Sign in</a>
+                            <a href="{{ route('register') }}" class="{{ $btnOutline }}">Create account</a>
+                        </div>
+                        @break
+
+                    @case('no_member')
+                        <h2 class="text-lg font-bold text-slate-900">Membership required</h2>
+                        <p class="mt-1 text-sm text-slate-500">
+                            Borrowing is for library members. Send a short application and the library will review it.
+                        </p>
+                        <div class="mt-5">
+                            <a href="{{ route('membership.apply') }}" class="{{ $btnPrimary }}">Apply for membership</a>
+                        </div>
+                        @break
+
+                    @case('rejected')
+                        <h2 class="text-lg font-bold text-slate-900">Application not approved</h2>
+                        <p class="mt-1 text-sm text-slate-500">
+                            You can update your details and apply again.
+                        </p>
+                        <div class="mt-5">
+                            <a href="{{ route('membership.apply') }}" class="{{ $btnPrimary }}">Apply again</a>
+                        </div>
+                        @break
+
+                    @case('pending')
+                        <h2 class="text-lg font-bold text-slate-900">Application under review</h2>
+                        <p class="mt-1 text-sm text-slate-500">
+                            You will be able to borrow as soon as the library approves your membership.
+                        </p>
+                        <div class="mt-5">
+                            <a href="{{ route('profile') }}" class="{{ $btnOutline }}">View my profile</a>
+                        </div>
+                        @break
+
+                    @case('borrowed')
+                        <h2 class="text-lg font-bold text-slate-900">You have this book</h2>
+                        <p class="mt-1 text-sm {{ $daysLeft < 0 ? 'font-medium text-red-600' : 'text-slate-500' }}">
+                            @if($daysLeft < 0)
+                                Overdue by {{ abs($daysLeft) }} {{ abs($daysLeft) === 1 ? 'day' : 'days' }}
+                                (due {{ $activeBorrowing->due_date->format('M j, Y') }}).
+                            @elseif($daysLeft === 0)
+                                Due today.
+                            @else
+                                Due {{ $activeBorrowing->due_date->format('M j, Y') }}
+                                · {{ $daysLeft }} {{ $daysLeft === 1 ? 'day' : 'days' }} left.
+                            @endif
+                        </p>
+                        <form method="POST" action="{{ route('books.return', $book) }}"
+                              onsubmit="return confirm('Return this book?')" class="mt-5">
+                            @csrf
+                            <button type="submit"
+                                    class="{{ $btn }} bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500">
+                                Return book
+                            </button>
+                        </form>
+                        @break
+
+                    @case('can_borrow')
+                        <h2 class="text-lg font-bold text-slate-900">Ready to borrow</h2>
+                        <p class="mt-1 text-sm text-slate-500">
+                            Loan period: {{ config('library.loan_days') }} days.
+                            Late returns are charged a daily fine.
+                        </p>
+                        @if($activeReservation)
+                            <p class="mt-3 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                                You reserved this book and it is now available.
+                            </p>
+                        @endif
+                        <form method="POST" action="{{ route('books.borrow', $book) }}" class="mt-5">
+                            @csrf
+                            <button type="submit" class="{{ $btnPrimary }}">Borrow book</button>
+                        </form>
+                        @break
+
+                    @case('reserved')
+                        <h2 class="text-lg font-bold text-slate-900">You are in the queue</h2>
+                        <p class="mt-1 text-sm text-slate-500">
+                            All copies are on loan. We are keeping your place for this book.
+                        </p>
+                        <form method="POST" action="{{ route('books.reserve.cancel', $book) }}"
+                              onsubmit="return confirm('Cancel your reservation?')" class="mt-5">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="{{ $btnOutline }}">Cancel reservation</button>
+                        </form>
+                        @break
+
+                    @default
+                        <h2 class="text-lg font-bold text-slate-900">Currently unavailable</h2>
+                        <p class="mt-1 text-sm text-slate-500">
+                            All copies are on loan. Reserve it to join the queue.
+                        </p>
+                        <form method="POST" action="{{ route('books.reserve', $book) }}" class="mt-5">
+                            @csrf
+                            <button type="submit"
+                                    class="{{ $btn }} bg-amber-500 text-white hover:bg-amber-600 focus:ring-amber-400">
+                                Reserve book
+                            </button>
+                        </form>
+
+                @endswitch
+
+            </div>
+        </aside>
+
+
+        {{-- ================= Details ================= --}}
+        <div class="space-y-10 lg:col-span-2">
+
+            <section>
+                <h2 class="text-lg font-bold text-slate-900">About this book</h2>
+
+                @if($book->description)
+                    <p class="mt-3 max-w-prose whitespace-pre-line text-sm leading-7 text-slate-600">
+                        {{ $book->description }}
+                    </p>
                 @else
-                    <h2 class="font-bold text-slate-900">Membership required</h2>
-                    <p class="mt-1 text-sm text-slate-500">Apply for a library membership to borrow books.</p>
+                    <p class="mt-3 text-sm text-slate-400">No description available.</p>
                 @endif
-            @elseif($activeBorrowing)
-                <h2 class="font-bold text-slate-900">You have this book</h2>
-                <p class="mt-1 text-sm {{ $activeBorrowing->due_date->isPast() ? 'text-red-600' : 'text-slate-500' }}">
-                    Due on {{ $activeBorrowing->due_date->format('M j, Y') }}
-                </p>
-            @elseif($book->available_quantity > 0)
-                <h2 class="font-bold text-slate-900">Ready to borrow?</h2>
-                <p class="mt-1 text-sm text-slate-500">This book is currently available.</p>
-            @else
-                <h2 class="font-bold text-slate-900">This book is currently borrowed</h2>
-                <p class="mt-1 text-sm text-slate-500">You can reserve it and we'll keep your request in the queue.</p>
-            @endguest
+            </section>
+
+            <section>
+                <h2 class="text-lg font-bold text-slate-900">Details</h2>
+
+                <dl class="mt-3 grid gap-x-10 sm:grid-cols-2">
+                    @foreach ([
+                        'ISBN'             => $book->isbn,
+                        'Publisher'        => $book->publisher?->name,
+                        'Publication year' => $book->publication_year,
+                        'Pages'            => $book->pages,
+                        'Shelf location'   => $book->shelf_location,
+                        'Total copies'     => $book->total_copies,
+                    ] as $label => $value)
+                        <div class="flex items-baseline justify-between gap-4 border-b border-slate-100 py-3">
+                            <dt class="text-sm text-slate-500">{{ $label }}</dt>
+                            <dd class="text-right text-sm font-medium text-slate-900">{{ $value ?: '—' }}</dd>
+                        </div>
+                    @endforeach
+                </dl>
+            </section>
+
         </div>
 
-        <div class="flex flex-col gap-2 sm:flex-row">
-            @guest
-                <a href="{{ route('login') }}" class="{{ $btn }} bg-blue-600 hover:bg-blue-700">Login to Borrow</a>
-            @elseif(! $currentMember)
-                @if($application?->status !== 'pending')
-                    <a href="{{ route('membership.apply') }}" class="{{ $btn }} bg-blue-600 hover:bg-blue-700">
-                        Apply for membership
-                    </a>
-                @endif
-            @elseif($activeBorrowing)
-                <form method="POST" action="{{ route('books.return', $book) }}"
-                      onsubmit="return confirm('Return this book?')">
-                    @csrf
-                    <button type="submit" class="{{ $btn }} bg-emerald-600 hover:bg-emerald-700">Return Book</button>
-                </form>
-            @elseif($book->available_quantity > 0)
-                <form method="POST" action="{{ route('books.borrow', $book) }}">
-                    @csrf
-                    <button type="submit" class="{{ $btn }} bg-blue-600 hover:bg-blue-700">Borrow Book</button>
-                </form>
-            @else
-                <form method="POST" action="{{ route('books.reserve', $book) }}">
-                    @csrf
-                    <button type="submit" class="{{ $btn }} bg-amber-500 hover:bg-amber-600">Reserve Book</button>
-                </form>
-            @endguest
-
-            <a href="{{ url('/books') }}"
-               class="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:w-auto">
-                Browse More
-            </a>
-        </div>
     </div>
-</section>
 
 </div>
 

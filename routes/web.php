@@ -80,6 +80,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/books/{book}/return', [UserBookController::class, 'returnBook'])
         ->name('books.return');
+    Route::delete('/books/{book}/reserve', [UserBookController::class, 'cancelReservation'])
+    ->name('books.reserve.cancel');
 });
 
 

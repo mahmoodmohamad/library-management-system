@@ -54,4 +54,15 @@ class ReservationService
             ]);
         });
     }
+    public function cancel(Member $member, Book $book): void
+{
+    $cancelled = Reservation::active()
+        ->where('member_id', $member->id)
+        ->where('book_id', $book->id)
+        ->update(['status' => 'cancelled']);
+
+    if ($cancelled === 0) {
+        throw new DomainException('You have no active reservation for this book.');
+    }
+}
 }

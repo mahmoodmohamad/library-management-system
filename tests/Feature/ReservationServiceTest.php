@@ -79,4 +79,37 @@ class ReservationServiceTest extends TestCase
         $this->expectException(DomainException::class);
         app(ReservationService::class)->reserve($member, $book);
     }
+    public function test_member_can_cancel_reservation(): void
+{
+    $member = Member::factory()->active()->create();
+    $book = $this->unavailableBook();
+    $service = app(ReservationService::class);
+
+    $reservation = $service->reserve($member, $book);
+    $service->cancel($member, $book);
+
+    $this->assertSame('cancelled', $reservation->fresh()->status);
+}
+
+public function test_cancel_without_reservation_fails(): void
+{
+    $this->expectException(DomainException::class);
+
+    app(ReservationService::class)->cancel(
+        Member::factory()->active()->create(),
+        $this->unavailableBook()
+    );
+}
+
+public function test_member_can_reserve_again_after_cancelling(): void
+{
+    $member = Member::factory()->active()->create();
+    $book = $this->unavailableBook();
+    $service = app(ReservationService::class);
+
+    $service->reserve($member, $book);
+    $service->cancel($member, $book);
+
+    $this->assertSame('active', $service->reserve($member, $book)->status);
+}
 }

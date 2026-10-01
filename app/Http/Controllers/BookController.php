@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use App\Services\ReservationService;
+use App\Models\Reservation;
 class BookController extends Controller
 {
     public function __construct(
@@ -39,8 +40,23 @@ class BookController extends Controller
             ->whereNull('returned_at')
             ->first();
     }
+$activeBorrowing = null;
+$activeReservation = null;
 
-    return view('books.show', compact('book', 'activeBorrowing'));
+if (Auth::check() && $member = Auth::user()->member) {
+    $activeBorrowing = Borrowing::where('member_id', $member->id)
+        ->where('book_id', $book->id)
+        ->whereNull('returned_at')
+        ->first();
+
+    $activeReservation = Reservation::active()
+        ->where('member_id', $member->id)
+        ->where('book_id', $book->id)
+        ->first();
+}
+
+return view('books.show', compact('book', 'activeBorrowing', 'activeReservation'));
+    
 }
 
     public function borrow(Book $book): RedirectResponse
@@ -121,5 +137,27 @@ class BookController extends Controller
     return redirect()
         ->route('books.show', $book)
         ->with('success', 'Book reserved. We will keep your place in the queue.');
+}
+public function cancelReservation(Book $book): RedirectResponse
+{
+    $member = Auth::user()->member;
+
+    if (!$member) {
+        throw ValidationException::withMessages([
+            'reservation' => 'Your account is not linked to a library member.',
+        ]);
+    }
+
+    try {
+        $this->reservationService->cancel($member, $book);
+    } catch (DomainException $e) {
+        throw ValidationException::withMessages([
+            'reservation' => $e->getMessage(),
+        ]);
+    }
+
+    return redirect()
+        ->route('books.show', $book)
+        ->with('success', 'Reservation cancelled.');
 }
 }
