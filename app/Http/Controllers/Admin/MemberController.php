@@ -72,7 +72,10 @@ class MemberController extends Controller
             ]);
         }
 
-        $member->delete();
+        DB::transaction(function () use ($member) {
+    $member->reservations()->active()->update(['status' => 'cancelled']);
+    $member->delete();
+});
 
         if ($request->expectsJson()) {
             return response()->noContent();
@@ -142,20 +145,22 @@ public function create(Request $request)
 
     return view('admin.members.form', compact('member', 'application'));
 }
-
 public function store(Request $request)
-{Gate::authorize('create', Member::class);
+{
+    Gate::authorize('create', Member::class);
+
     $application = $request->filled('application_id')
-        ? MembershipApplication::with('user')->where('status', 'pending')->findOrFail($request->application_id)
+        ? MembershipApplication::where('status', 'pending')->findOrFail($request->application_id)
         : null;
 
     if ($application) {
-        // الإيميل بيجي من حساب اليوزر، مش من الأدمن
+        
         $request->merge(['email' => $application->user->email]);
     }
 
     $data = $request->validate($this->rules());
     $data['outstanding_fines'] ??= 0;
+    $data['user_id'] = $application?->user_id;
 
     $member = DB::transaction(function () use ($data, $application) {
         $member = Member::create($data);

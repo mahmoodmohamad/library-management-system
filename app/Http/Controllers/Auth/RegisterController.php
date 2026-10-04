@@ -34,7 +34,7 @@ class RegisterController extends Controller
         'password' => $data['password'], // cast 'hashed'
         'role_id' => Role::where('name', 'member')->firstOrFail()->id,
     ]);
-
+event(new \Illuminate\Auth\Events\Registered($user));
     Auth::login($user);
     $request->session()->regenerate();
 

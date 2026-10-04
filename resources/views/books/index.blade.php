@@ -29,7 +29,109 @@
         </div>
 
     </div>
+{{-- Filters --}}
+<form method="GET" action="{{ route('books.index') }}"
+      class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
+    <div class="grid gap-4 md:grid-cols-4">
+
+        {{-- Search --}}
+        <div class="md:col-span-2">
+            <label for="search"
+                   class="block text-sm font-medium text-slate-700">
+                Search
+            </label>
+
+            <input
+                type="text"
+                id="search"
+                name="search"
+                value="{{ $search }}"
+                placeholder="Title, ISBN or author..."
+                class="mt-1.5 block w-full rounded-lg border-slate-300
+                       text-sm shadow-sm focus:border-blue-500
+                       focus:ring-blue-500"
+            >
+        </div>
+
+        {{-- Category --}}
+        <div>
+            <label for="category"
+                   class="block text-sm font-medium text-slate-700">
+                Category
+            </label>
+
+            <select
+                id="category"
+                name="category"
+                class="mt-1.5 block w-full rounded-lg border-slate-300
+                       text-sm shadow-sm focus:border-blue-500
+                       focus:ring-blue-500"
+            >
+                <option value="">All categories</option>
+
+                @foreach($categories as $item)
+                    <option value="{{ $item->id }}"
+                        @selected((string) $category === (string) $item->id)>
+                        {{ $item->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Availability --}}
+        <div>
+            <label for="availability"
+                   class="block text-sm font-medium text-slate-700">
+                Availability
+            </label>
+
+            <select
+                id="availability"
+                name="availability"
+                class="mt-1.5 block w-full rounded-lg border-slate-300
+                       text-sm shadow-sm focus:border-blue-500
+                       focus:ring-blue-500"
+            >
+                <option value="">All books</option>
+
+                <option value="available"
+                    @selected($availability === 'available')>
+                    Available
+                </option>
+
+                <option value="unavailable"
+                    @selected($availability === 'unavailable')>
+                    Unavailable
+                </option>
+            </select>
+        </div>
+
+    </div>
+
+    <div class="mt-4 flex gap-3">
+
+        <button
+            type="submit"
+            class="rounded-lg bg-blue-600 px-4 py-2.5
+                   text-sm font-semibold text-white
+                   shadow-sm transition hover:bg-blue-700"
+        >
+            Search
+        </button>
+
+        <a
+            href="{{ route('books.index') }}"
+            class="rounded-lg border border-slate-300
+                   bg-white px-4 py-2.5 text-sm font-semibold
+                   text-slate-700 transition hover:bg-slate-50"
+        >
+            Clear
+        </a>
+
+    </div>
+
+</form>
 
     {{-- Books --}}
     @if($books->count())

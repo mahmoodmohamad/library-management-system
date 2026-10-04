@@ -9,7 +9,8 @@
     $activeBorrowing = $activeBorrowing ?? null;
     $activeReservation = $activeReservation ?? null;
     $available = $book->available_quantity;
-
+$memberInactive = $viewerMember
+    && ($viewerMember->status !== 'active' || $viewerMember->membership_expiry_date->isPast());
     // One state drives the whole action card.
     $state = match (true) {
         ! $viewer                                  => 'guest',
@@ -17,9 +18,11 @@
         ! $viewerMember && $application?->status === 'rejected' => 'rejected',
         ! $viewerMember                            => 'no_member',
         (bool) $activeBorrowing                    => 'borrowed',
+        $memberInactive => 'inactive',
         $available > 0                             => 'can_borrow',
         (bool) $activeReservation                  => 'reserved',
         default                                    => 'can_reserve',
+
     };
 
     $daysLeft = $activeBorrowing
@@ -164,7 +167,11 @@
                             </button>
                         </form>
                         @break
-
+@case('inactive')
+    <h2 class="text-lg font-bold text-slate-900">Membership not active</h2>
+    <p class="mt-1 text-sm text-slate-500">Your membership is suspended or expired. Contact the library to renew.</p>
+    <div class="mt-5"><a href="{{ route('profile') }}" class="{{ $btnOutline }}">View my profile</a></div>
+    @break
                     @case('can_borrow')
                         <h2 class="text-lg font-bold text-slate-900">Ready to borrow</h2>
                         <p class="mt-1 text-sm text-slate-500">

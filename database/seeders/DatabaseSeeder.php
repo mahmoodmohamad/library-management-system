@@ -16,13 +16,13 @@ class DatabaseSeeder extends Seeder
     // الأول سيّد كل الجداول المرجعية
     $this->call([
         RoleSeeder::class,
-        CategorySeeder::class,
-        PublisherSeeder::class,
-        AuthorSeeder::class,
-        BookSeeder::class,
-        MemberSeeder::class,
-        BorrowingSeeder::class,
-        AuthorBookSeeder::class,
+CategorySeeder::class,
+PublisherSeeder::class,
+AuthorSeeder::class,
+BookSeeder::class,
+AuthorBookSeeder::class,
+MemberSeeder::class,
+BorrowingSeeder::class,
     ]);
 
     // بعدين اعمل الـ Users بعد ما يكون فيه Roles

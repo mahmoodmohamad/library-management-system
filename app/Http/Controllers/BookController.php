@@ -21,11 +21,42 @@ class BookController extends Controller
 }
     public function index(): View
 {
-    $books = Book::with(['authors', 'category', 'publisher'])
-        ->latest()
-        ->paginate(12);
+    $search = request('search');
+    $category = request('category');
+    $availability = request('availability');
 
-    return view('books.index', compact('books'));
+    $books = Book::with(['authors', 'category', 'publisher'])
+        ->when($search, function ($query, $search) {
+            $query->where(function ($query) use ($search) {
+                $query->where('title', 'like', "%{$search}%")
+                    ->orWhere('isbn', 'like', "%{$search}%")
+                    ->orWhereHas('authors', function ($query) use ($search) {
+                        $query->where('name', 'like', "%{$search}%");
+                    });
+            });
+        })
+        ->when($category, function ($query, $category) {
+            $query->where('category_id', $category);
+        })
+        ->when($availability === 'available', function ($query) {
+            $query->where('available_quantity', '>', 0);
+        })
+        ->when($availability === 'unavailable', function ($query) {
+            $query->where('available_quantity', '=', 0);
+        })
+        ->latest()
+        ->paginate(12)
+        ->withQueryString();
+
+    $categories = \App\Models\Category::orderBy('name')->get();
+
+    return view('books.index', compact(
+        'books',
+        'categories',
+        'search',
+        'category',
+        'availability'
+    ));
 }
 
     public function show(Book $book): View
@@ -33,30 +64,25 @@ class BookController extends Controller
     $book->load(['authors', 'category', 'publisher']);
 
     $activeBorrowing = null;
+    $activeReservation = null;
 
     if (Auth::check() && $member = Auth::user()->member) {
         $activeBorrowing = Borrowing::where('member_id', $member->id)
             ->where('book_id', $book->id)
             ->whereNull('returned_at')
             ->first();
+
+        $activeReservation = Reservation::active()
+            ->where('member_id', $member->id)
+            ->where('book_id', $book->id)
+            ->first();
     }
-$activeBorrowing = null;
-$activeReservation = null;
 
-if (Auth::check() && $member = Auth::user()->member) {
-    $activeBorrowing = Borrowing::where('member_id', $member->id)
-        ->where('book_id', $book->id)
-        ->whereNull('returned_at')
-        ->first();
-
-    $activeReservation = Reservation::active()
-        ->where('member_id', $member->id)
-        ->where('book_id', $book->id)
-        ->first();
-}
-
-return view('books.show', compact('book', 'activeBorrowing', 'activeReservation'));
-    
+    return view('books.show', compact(
+        'book',
+        'activeBorrowing',
+        'activeReservation'
+    ));
 }
 
     public function borrow(Book $book): RedirectResponse
@@ -76,6 +102,7 @@ return view('books.show', compact('book', 'activeBorrowing', 'activeReservation'
                 'borrowing' => $e->getMessage(),
             ]);
         }
+    $this->attempt('borrowing', fn () => $this->borrowingService->borrow($this->currentMember('borrowing'), $book));
 
         return redirect()
             ->route('books.show', $book)
@@ -110,6 +137,7 @@ return view('books.show', compact('book', 'activeBorrowing', 'activeReservation'
                 'borrowing' => $e->getMessage(),
             ]);
         }
+    $this->attempt('borrowing', fn () => $this->borrowingService->returnBook($borrowing));
 
         return redirect()
             ->route('books.show', $book)
@@ -133,6 +161,7 @@ return view('books.show', compact('book', 'activeBorrowing', 'activeReservation'
             'reservation' => $e->getMessage(),
         ]);
     }
+    $this->attempt('reservation', fn () => $this->reservationService->reserve($this->currentMember('reservation'), $book));
 
     return redirect()
         ->route('books.show', $book)
@@ -155,6 +184,7 @@ public function cancelReservation(Book $book): RedirectResponse
             'reservation' => $e->getMessage(),
         ]);
     }
+    $this->attempt('reservation', fn () => $this->reservationService->cancel($this->currentMember('reservation'), $book));
 
     return redirect()
         ->route('books.show', $book)

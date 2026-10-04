@@ -114,7 +114,10 @@ class BookController extends Controller
             ]);
         }
 
-        $book->delete();
+        DB::transaction(function () use ($book) {
+    $book->reservations()->active()->update(['status' => 'cancelled']);
+    $book->delete();
+});
 
         if ($request->expectsJson()) {
             return response()->noContent();

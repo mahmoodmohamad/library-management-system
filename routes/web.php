@@ -5,13 +5,38 @@ use App\Http\Controllers\Admin\BorrowingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MemberController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BookController as UserBookController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MembershipApplicationController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\ReportController;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
 
+Route::middleware('auth')->group(function () {
+    Route::get('/email/verify', fn () => view('auth.verify-email'))->name('verification.notice');
+
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $r) {
+        $r->fulfill();
+        return redirect()->route('profile');
+    })->middleware('signed')->name('verification.verify');
+
+    Route::post('/email/verification-notification', function (Request $r) {
+        $r->user()->sendEmailVerificationNotification();
+        return back()->with('success', 'Verification link sent.');
+    })->middleware('throttle:6,1')->name('verification.send');
+});
+
+// routes/web.php
+Route::middleware('guest')->group(function () {
+    Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'email'])->middleware('throttle:6,1')->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'reset'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'update'])->name('password.update');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -21,14 +46,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])
     ->name('home');
+
 Route::get('/books', [UserBookController::class, 'index'])
     ->name('books.index');
 
 Route::get('/books/{book}', [UserBookController::class, 'show'])
     ->name('books.show');
-Route::get('/books/{book}', [UserBookController::class, 'show'])
-    ->name('books.show');
-
 
 /*
 |--------------------------------------------------------------------------
@@ -54,7 +77,6 @@ Route::post('/logout', [LoginController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
 
-
 /*
 |--------------------------------------------------------------------------
 | Authenticated User Routes
@@ -62,7 +84,6 @@ Route::post('/logout', [LoginController::class, 'destroy'])
 */
 
 Route::middleware('auth')->group(function () {
-
     Route::get('/profile', [ProfileController::class, 'index'])
         ->name('profile');
 
@@ -78,12 +99,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/books/{book}/reserve', [UserBookController::class, 'reserve'])
         ->name('books.reserve');
 
+    Route::delete('/books/{book}/reserve', [UserBookController::class, 'cancelReservation'])
+        ->name('books.reserve.cancel');
+
     Route::post('/books/{book}/return', [UserBookController::class, 'returnBook'])
         ->name('books.return');
-    Route::delete('/books/{book}/reserve', [UserBookController::class, 'cancelReservation'])
-    ->name('books.reserve.cancel');
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -95,6 +116,9 @@ Route::prefix('admin')
     ->name('admin.')
     ->middleware(['auth', 'admin'])
     ->group(function () {
+
+
+Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
 
         Route::get('/', [DashboardController::class, 'index'])
             ->name('dashboard');
@@ -110,8 +134,10 @@ Route::prefix('admin')
         Route::get('members/pending', [MemberController::class, 'pending'])
             ->name('members.pending');
 
-        Route::post('members/applications/{application}/reject', [MemberController::class, 'rejectApplication'])
-            ->name('members.applications.reject');
+        Route::post(
+            'members/applications/{application}/reject',
+            [MemberController::class, 'rejectApplication']
+        )->name('members.applications.reject');
 
         Route::resource('members', MemberController::class);
 
@@ -124,6 +150,8 @@ Route::prefix('admin')
         Route::post('/borrowings', [BorrowingController::class, 'store'])
             ->name('borrowings.store');
 
-        Route::post('/borrowings/{borrowing}/give-back', [BorrowingController::class, 'giveBack'])
-            ->name('borrowings.giveBack');
+        Route::post(
+            '/borrowings/{borrowing}/give-back',
+            [BorrowingController::class, 'giveBack']
+        )->name('borrowings.giveBack');
     });

@@ -30,10 +30,18 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
-            'role_id' => Role::inRandomOrder()->first()?->id ?? Role::factory(),
+            'role_id' => fn () => Role::firstOrCreate(['name' => 'member'])->id,
         ];
     }
+public function admin(): static
+{
+    return $this->state(fn () => ['role_id' => Role::firstOrCreate(['name' => 'admin'])->id]);
+}
 
+public function librarian(): static
+{
+    return $this->state(fn () => ['role_id' => Role::firstOrCreate(['name' => 'librarian'])->id]);
+}
     /**
      * Indicate that the model's email address should be unverified.
      */

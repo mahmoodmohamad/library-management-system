@@ -2,296 +2,344 @@
 
 @section('title', 'Home')
 
+@push('styles')
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
+    <style>
+        .font-display { font-family: 'Newsreader', Georgia, 'Times New Roman', serif; }
+    </style>
+@endpush
+
 @section('content')
 
-<div class="space-y-12">
+@php
+    // Deterministic cover colour per title (no cover images in the schema).
+    $palettes = [
+        'from-sky-700 to-blue-900',
+        'from-emerald-700 to-teal-900',
+        'from-rose-700 to-red-900',
+        'from-amber-600 to-orange-800',
+        'from-violet-700 to-purple-900',
+        'from-cyan-700 to-sky-900',
+        'from-slate-600 to-slate-800',
+    ];
+    $cover = fn ($book) => $palettes[crc32($book->title) % count($palettes)];
 
-    {{-- =========================================================
-         HERO
-    ========================================================== --}}
+    $topCategories = $categories->where('books_count', '>', 0)->sortByDesc('books_count')->take(6);
 
-    <section class="relative overflow-hidden rounded-3xl bg-slate-900">
+    $banner = match ($membershipState) {
+        'guest' => [
+            'title' => 'Create an account to start borrowing',
+            'text' => 'Registration is free. After that, apply for a library membership.',
+            'cta' => ['Create account', route('register')],
+            'alt' => ['Sign in', route('login')],
+            'tone' => 'blue',
+        ],
+        'none' => [
+            'title' => 'You are one step away from borrowing',
+            'text' => 'Send a membership application. The library reviews it and activates your card.',
+            'cta' => ['Apply for membership', route('membership.apply')],
+            'alt' => null,
+            'tone' => 'blue',
+        ],
+        'pending' => [
+            'title' => 'Your membership application is under review',
+            'text' => 'You can still browse. You can edit your details until the library approves them.',
+            'cta' => ['Edit application', route('membership.apply')],
+            'alt' => null,
+            'tone' => 'amber',
+        ],
+        'rejected' => [
+            'title' => 'Your membership application was not approved',
+            'text' => 'Check your details and apply again.',
+            'cta' => ['Update and reapply', route('membership.apply')],
+            'alt' => null,
+            'tone' => 'red',
+        ],
+        'inactive' => [
+            'title' => 'Your membership is not active',
+            'text' => 'It is suspended or expired, so borrowing is paused. Contact the library to renew.',
+            'cta' => ['View my profile', route('profile')],
+            'alt' => null,
+            'tone' => 'amber',
+        ],
+        default => null,
+    };
 
-        <div class="absolute inset-0">
-            <div class="absolute -right-24 -top-24 h-72 w-72 rounded-full
-                        bg-blue-600/20 blur-3xl"></div>
+    $tones = [
+        'blue'  => 'border-blue-200 bg-blue-50 text-blue-900',
+        'amber' => 'border-amber-200 bg-amber-50 text-amber-900',
+        'red'   => 'border-red-200 bg-red-50 text-red-900',
+    ];
 
-            <div class="absolute -bottom-32 -left-20 h-80 w-80 rounded-full
-                        bg-indigo-500/10 blur-3xl"></div>
-        </div>
+    $stepsDone = match ($membershipState) {
+        'guest' => 0,
+        'member', 'inactive' => 2,
+        default => 1,
+    };
 
-        <div class="relative px-6 py-14 sm:px-10 lg:px-16 lg:py-20">
+    $steps = [
+        ['Create an account', 'Sign up with your name and email.'],
+        ['Get your membership', 'Apply once. The library approves it and issues your member number.'],
+        ['Borrow and return', 'Borrow from any book page. Late returns add a fine to your account.'],
+    ];
+@endphp
 
-            <div class="max-w-3xl">
+<div class="space-y-14">
 
-                <span class="inline-flex items-center rounded-full
-                             border border-blue-400/20 bg-blue-500/10
-                             px-3 py-1 text-xs font-semibold
-                             text-blue-300">
+    {{-- Hero --}}
+    <section class="grid items-center gap-10 pt-2 lg:grid-cols-5 lg:gap-6">
 
-                    Your digital library
+        <div class="lg:col-span-3">
 
-                </span>
+            <h1 class="font-display text-4xl font-semibold leading-[1.1] tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+                Find your next book and borrow it in minutes.
+            </h1>
 
-                <h1 class="mt-5 text-4xl font-bold tracking-tight text-white
-                           sm:text-5xl lg:text-6xl">
+            <p class="mt-5 max-w-xl text-base leading-7 text-slate-600">
+                Search the full catalogue, see what is on the shelf right now, and track your loans in one place.
+            </p>
 
-                    Discover your next
-                    <span class="text-blue-400">
-                        great read.
-                    </span>
+            <form action="{{ route('books.index') }}" method="GET" role="search" class="mt-8 max-w-2xl">
 
-                </h1>
+                <div class="flex flex-col gap-2 rounded-2xl border border-slate-300 bg-white p-2 shadow-sm
+                            transition focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100
+                            sm:flex-row sm:items-center">
 
-                <p class="mt-5 max-w-2xl text-base leading-7 text-slate-300
-                          sm:text-lg">
-
-                    Explore our collection, find the books you are looking for,
-                    and keep track of everything you borrow from the library.
-
-                </p>
-
-
-                {{-- Search --}}
-                <form action="{{ url('/books') }}"
-                      method="GET"
-                      class="mt-8 max-w-2xl">
-
-                    <div class="flex flex-col gap-2 rounded-2xl bg-white p-2
-                                shadow-xl sm:flex-row">
-
-                        <div class="flex flex-1 items-center px-3">
-
-                            <svg class="mr-3 h-5 w-5 shrink-0 text-slate-400"
-                                 viewBox="0 0 24 24"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 stroke-width="2">
-
-                                <circle cx="11" cy="11" r="7"/>
-                                <path d="m20 20-4-4"/>
-
-                            </svg>
-
-                            <input
-                                type="text"
-                                name="search"
-                                placeholder="Search by title, ISBN or author..."
-                                class="w-full border-0 bg-transparent py-3 text-sm
-                                       text-slate-900 outline-none
-                                       placeholder:text-slate-400
-                                       focus:ring-0"
-                            >
-
-                        </div>
-
-                        <button type="submit"
-                                class="rounded-xl bg-blue-600 px-6 py-3
-                                       text-sm font-semibold text-white
-                                       transition hover:bg-blue-700">
-
-                            Search Books
-
-                        </button>
-
+                    <div class="relative flex-1">
+                        <label for="home-search" class="sr-only">Search books</label>
+                        <svg class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>
+                        </svg>
+                        <input id="home-search" type="search" name="search" value="{{ request('search') }}"
+                               autocomplete="off" placeholder="Title, author or ISBN"
+                               class="w-full rounded-xl border-0 bg-transparent py-3 pl-10 pr-10 text-sm text-slate-900
+                                      placeholder:text-slate-400 focus:outline-none focus:ring-0">
+                        <kbd class="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border
+                                    border-slate-300 px-1.5 text-xs text-slate-400 sm:block" aria-hidden="true">/</kbd>
                     </div>
 
-                </form>
+                    <label for="home-category" class="sr-only">Category</label>
+                    <select id="home-category" name="category"
+                            class="rounded-xl border-0 bg-slate-100 py-3 pl-3 pr-8 text-sm text-slate-700
+                                   focus:outline-none focus:ring-2 focus:ring-blue-200 sm:w-44">
+                        <option value="">All categories</option>
 
+@foreach ($categories as $category)
+    <option value="{{ $category->id }}"
+        @selected((string) request('category') === (string) $category->id)>
+        {{ $category->name }}
+    </option>
+@endforeach
+                    </select>
+
+                    <button type="submit"
+                            class="rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition
+                                   hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200">
+                        Search
+                    </button>
+                </div>
+
+                <label class="mt-3 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+                    <input type="checkbox"
+       name="availability"
+       value="available"
+       @checked(request('availability') === 'available')
+       class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+
+Only show books available now
+                </label>
+            </form>
+
+            @if ($topCategories->isNotEmpty())
+                <nav class="mt-6 flex flex-wrap items-center gap-2" aria-label="Popular categories">
+                    <span class="mr-1 text-sm text-slate-500">Popular:</span>
+                    @foreach ($topCategories as $category)
+                        <a href="{{ route('books.index', ['category' => $category->id]) }}"
+                           class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 transition
+                                  hover:border-blue-300 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300">
+                            {{ $category->name }}
+                            <span class="text-slate-400">{{ $category->books_count }}</span>
+                        </a>
+                    @endforeach
+                </nav>
+            @endif
+
+            <dl class="mt-10 flex flex-wrap gap-x-10 gap-y-4 border-t border-slate-200 pt-6">
+                <div>
+                    <dt class="text-sm text-slate-500">Titles</dt>
+                    <dd class="font-display text-3xl font-semibold text-slate-900">{{ number_format($stats['books']) }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-slate-500">On the shelf now</dt>
+                    <dd class="font-display text-3xl font-semibold text-slate-900">{{ number_format($stats['available_books']) }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-slate-500">Active members</dt>
+                    <dd class="font-display text-3xl font-semibold text-slate-900">{{ number_format($stats['members']) }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        {{-- Cover stack --}}
+        @if ($recentBooks->count() >= 3)
+            <div class="relative mx-auto hidden h-80 w-full max-w-sm lg:col-span-2 lg:block" aria-hidden="true">
+                @foreach ($recentBooks->take(3) as $i => $book)
+                    @php
+                        $pos = [
+                            'left-0 top-10 -rotate-6',
+                            'left-1/2 top-0 -translate-x-1/2 z-10',
+                            'right-0 top-12 rotate-6',
+                        ][$i];
+                    @endphp
+                    <div class="absolute {{ $pos }} h-64 w-44 overflow-hidden rounded-lg bg-gradient-to-br {{ $cover($book) }}
+                                p-4 text-white shadow-xl ring-1 ring-black/10">
+                        <span class="absolute inset-y-0 left-2.5 w-px bg-white/30"></span>
+                        <p class="font-display pl-2 text-xl font-semibold leading-tight line-clamp-5">{{ $book->title }}</p>
+                        @if ($book->authors->isNotEmpty())
+                            <p class="absolute bottom-4 left-6 right-4 truncate text-xs text-white/70">
+                                {{ $book->authors->first()->name }}
+                            </p>
+                        @endif
+                    </div>
+                @endforeach
             </div>
-
-        </div>
-
-    </section>
-
-
-    {{-- =========================================================
-         STATISTICS
-    ========================================================== --}}
-
-    <section class="grid gap-4 sm:grid-cols-3">
-
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
-            <p class="text-sm font-medium text-slate-500">
-                Books in Collection
-            </p>
-
-            <p class="mt-2 text-3xl font-bold text-slate-900">
-                {{ number_format($stats['books']) }}
-            </p>
-
-            <p class="mt-1 text-xs text-slate-400">
-                Available in our library
-            </p>
-
-        </div>
-
-
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
-            <p class="text-sm font-medium text-slate-500">
-                Books Available
-            </p>
-
-            <p class="mt-2 text-3xl font-bold text-slate-900">
-                {{ number_format($stats['available_books']) }}
-            </p>
-
-            <p class="mt-1 text-xs text-slate-400">
-                Ready to be borrowed
-            </p>
-
-        </div>
-
-
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
-            <p class="text-sm font-medium text-slate-500">
-                Active Members
-            </p>
-
-            <p class="mt-2 text-3xl font-bold text-slate-900">
-                {{ number_format($stats['members']) }}
-            </p>
-
-            <p class="mt-1 text-xs text-slate-400">
-                Part of our community
-            </p>
-
-        </div>
+        @endif
 
     </section>
 
 
-    {{-- =========================================================
-         RECENT BOOKS
-    ========================================================== --}}
+    {{-- Member loans / membership banner --}}
+    @if ($membershipState === 'member' && $myLoans)
 
-    <section>
-
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-end
-                    sm:justify-between">
-
+        <section class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between"
+                 aria-label="Your loans">
             <div>
-
-                <p class="text-sm font-semibold text-blue-600">
-                    Explore
-                </p>
-
-                <h2 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">
-                    Recently Added Books
-                </h2>
-
-                <p class="mt-1 text-sm text-slate-500">
-                    Discover some of the latest additions to our collection.
-                </p>
-
+                @if ($myLoans['count'] === 0)
+                    <h2 class="font-semibold text-slate-900">You have no books out</h2>
+                    <p class="mt-1 text-sm text-slate-500">Pick something from the catalogue to get started.</p>
+                @else
+                    <h2 class="font-semibold text-slate-900">
+                        You have {{ $myLoans['count'] }} {{ Str::plural('book', $myLoans['count']) }} out
+                        @if ($myLoans['overdue'] > 0)
+                            <span class="text-red-600">({{ $myLoans['overdue'] }} overdue)</span>
+                        @endif
+                    </h2>
+                    @if ($myLoans['next'])
+                        <p class="mt-1 text-sm {{ $myLoans['next']->due_date->lt(today()) ? 'text-red-600' : 'text-slate-500' }}">
+                            {{ $myLoans['next']->due_date->lt(today()) ? 'Was due' : 'Next due' }}
+                            {{ $myLoans['next']->due_date->format('M j') }}:
+                            {{ $myLoans['next']->book?->title }}
+                        </p>
+                    @endif
+                @endif
             </div>
-
-            <a href="{{ url('/books') }}"
-               class="text-sm font-semibold text-blue-600 hover:text-blue-700">
-
-                Browse all books
-                <span aria-hidden="true">→</span>
-
+            <a href="{{ route('profile') }}#my-borrowings"
+               class="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm
+                      font-semibold text-slate-700 transition hover:bg-slate-50">
+                View my loans
             </a>
+        </section>
 
+    @elseif ($banner)
+
+        <section class="flex flex-col gap-4 rounded-2xl border p-5 sm:flex-row sm:items-center sm:justify-between {{ $tones[$banner['tone']] }}"
+                 aria-label="Membership">
+            <div>
+                <h2 class="font-semibold">{{ $banner['title'] }}</h2>
+                <p class="mt-1 text-sm opacity-80">{{ $banner['text'] }}</p>
+            </div>
+            <div class="flex shrink-0 flex-col gap-2 sm:flex-row">
+                <a href="{{ $banner['cta'][1] }}"
+                   class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold
+                          text-white transition hover:bg-blue-700">
+                    {{ $banner['cta'][0] }}
+                </a>
+                @if ($banner['alt'])
+                    <a href="{{ $banner['alt'][1] }}"
+                       class="inline-flex items-center justify-center rounded-lg border border-blue-300 bg-white px-4 py-2.5
+                              text-sm font-semibold text-blue-700 transition hover:bg-blue-50">
+                        {{ $banner['alt'][0] }}
+                    </a>
+                @endif
+            </div>
+        </section>
+
+    @endif
+
+
+    {{-- Recently added --}}
+    <section aria-labelledby="recent-heading">
+
+        <div class="flex items-end justify-between gap-4">
+            <div>
+                <h2 id="recent-heading" class="font-display text-3xl font-semibold tracking-tight text-slate-900">
+                    Recently added
+                </h2>
+                <p class="mt-1 text-sm text-slate-500">The newest titles in the catalogue.</p>
+            </div>
+            <a href="{{ route('books.index') }}" class="shrink-0 text-sm font-semibold text-blue-600 hover:text-blue-700">
+                Browse all books
+            </a>
         </div>
 
-
-        <div class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="mt-6 grid gap-4 lg:grid-cols-2">
 
             @forelse ($recentBooks as $book)
 
-                <article class="group overflow-hidden rounded-2xl border
-                                border-slate-200 bg-white shadow-sm
-                                transition duration-200
-                                hover:-translate-y-1 hover:shadow-md">
+                @php
+                    $available = $book->available_quantity;
+                    $total = max($book->total_copies, 1);
+                    $percent = min(100, round($available / $total * 100));
+                @endphp
 
-                    {{-- Book Cover --}}
-                    <div class="flex h-48 items-center justify-center
-                                bg-gradient-to-br from-slate-100 to-slate-200">
+                <article class="group relative flex gap-4 rounded-2xl border border-slate-200 bg-white p-4 transition
+                                hover:border-slate-300 hover:shadow-sm focus-within:ring-2 focus-within:ring-blue-300">
 
-                        <svg class="h-16 w-16 text-slate-300"
-                             viewBox="0 0 24 24"
-                             fill="none"
-                             stroke="currentColor"
-                             stroke-width="1.5">
-
-                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>
-
-                        </svg>
-
+                    <div class="relative h-36 w-24 shrink-0 overflow-hidden rounded-md bg-gradient-to-br {{ $cover($book) }}
+                                p-2.5 text-white shadow-sm" aria-hidden="true">
+                        <span class="absolute inset-y-0 left-1.5 w-px bg-white/30"></span>
+                        <p class="font-display pl-1.5 text-[13px] font-semibold leading-tight line-clamp-5">{{ $book->title }}</p>
                     </div>
 
-
-                    <div class="p-5">
+                    <div class="flex min-w-0 flex-1 flex-col">
 
                         @if ($book->category)
-
-                            <span class="text-xs font-semibold text-blue-600">
-                                {{ $book->category->name }}
-                            </span>
-
+                            <p class="text-xs font-medium text-blue-700">{{ $book->category->name }}</p>
                         @endif
 
-                        <h3 class="mt-2 line-clamp-2 text-lg font-semibold
-                                   text-slate-900 group-hover:text-blue-600">
-
-                            {{ $book->title }}
-
+                        <h3 class="mt-1 line-clamp-2 text-base font-semibold leading-snug text-slate-900">
+                            <a href="{{ route('books.show', $book) }}"
+                               class="after:absolute after:inset-0 focus:outline-none">
+                                {{ $book->title }}
+                            </a>
                         </h3>
 
-
                         @if ($book->authors->isNotEmpty())
-
-                            <p class="mt-2 text-sm text-slate-500">
-
+                            <p class="mt-1 truncate text-sm text-slate-500">
                                 {{ $book->authors->pluck('name')->join(', ') }}
-
                             </p>
-
                         @endif
 
+                        <div class="mt-auto pt-4">
+                            <div class="h-1.5 overflow-hidden rounded-full bg-slate-100"
+                                 role="img" aria-label="{{ $available }} of {{ $book->total_copies }} copies available">
+                                <div class="h-full rounded-full {{ $available === 0 ? 'bg-slate-300' : ($available === 1 ? 'bg-amber-500' : 'bg-emerald-500') }}"
+                                     style="width: {{ $percent }}%"></div>
+                            </div>
 
-                        <div class="mt-5 flex items-center justify-between
-                                    border-t border-slate-100 pt-4">
-
-                            @if ($book->available_quantity > 0)
-
-                                <span class="inline-flex items-center gap-1.5
-                                             text-xs font-semibold text-emerald-600">
-
-                                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-
-                                    Available
-
-                                </span>
-
-                            @else
-
-                                <span class="inline-flex items-center gap-1.5
-                                             text-xs font-semibold text-slate-400">
-
-                                    <span class="h-2 w-2 rounded-full bg-slate-300"></span>
-
-                                    Currently unavailable
-
-                                </span>
-
-                            @endif
-
-
-                            <a href="{{ route('books.show', $book) }}"
-                               class="text-sm font-semibold text-blue-600
-                                      hover:text-blue-700">
-
-                                View book → 
-
-                            </a>
-
+                            <p class="mt-2 text-xs font-medium
+                                      {{ $available === 0 ? 'text-slate-500' : ($available === 1 ? 'text-amber-700' : 'text-emerald-700') }}">
+                                @if ($available === 0)
+                                    All copies on loan
+                                @elseif ($available === 1)
+                                    Last copy available
+                                @else
+                                    {{ $available }} of {{ $book->total_copies }} copies available
+                                @endif
+                            </p>
                         </div>
 
                     </div>
@@ -300,17 +348,9 @@
 
             @empty
 
-                <div class="col-span-full rounded-2xl border border-dashed
-                            border-slate-300 bg-white px-6 py-12 text-center">
-
-                    <p class="font-semibold text-slate-700">
-                        No books available yet
-                    </p>
-
-                    <p class="mt-1 text-sm text-slate-500">
-                        The library collection is currently empty.
-                    </p>
-
+                <div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+                    <p class="font-semibold text-slate-700">The catalogue is empty</p>
+                    <p class="mt-1 text-sm text-slate-500">Books will show up here as soon as the library adds them.</p>
                 </div>
 
             @endforelse
@@ -320,46 +360,51 @@
     </section>
 
 
-    {{-- =========================================================
-         CALL TO ACTION
-    ========================================================== --}}
+    {{-- How it works --}}
+    <section aria-labelledby="how-heading" class="border-t border-slate-200 pt-10">
 
-    <section class="rounded-2xl border border-blue-100 bg-blue-50 p-6
-                    sm:p-8">
+        <h2 id="how-heading" class="font-display text-3xl font-semibold tracking-tight text-slate-900">
+            How borrowing works
+        </h2>
 
-        <div class="flex flex-col gap-5 sm:flex-row sm:items-center
-                    sm:justify-between">
-
-            <div>
-
-                <h2 class="text-xl font-bold text-slate-900">
-                    Looking for something specific?
-                </h2>
-
-                <p class="mt-1 max-w-xl text-sm text-slate-600">
-                    Browse the complete collection and find your next book.
-                </p>
-
-            </div>
-
-            <a href="{{ url('/books') }}"
-               class="inline-flex shrink-0 items-center justify-center
-                      rounded-xl bg-blue-600 px-5 py-2.5 text-sm
-                      font-semibold text-white shadow-sm
-                      transition hover:bg-blue-700">
-
-                Browse Collection
-
-                <span class="ml-2">
-                    →
-                </span>
-
-            </a>
-
-        </div>
+        <ol class="mt-6 grid gap-6 sm:grid-cols-3">
+            @foreach ($steps as $i => [$title, $text])
+                @php $done = $i < $stepsDone; @endphp
+                <li class="flex gap-4">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold
+                                 {{ $done ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">
+                        @if ($done)
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                <path d="m5 12 4 4L19 6"/>
+                            </svg>
+                            <span class="sr-only">Done:</span>
+                        @else
+                            {{ $i + 1 }}
+                        @endif
+                    </span>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">{{ $title }}</h3>
+                        <p class="mt-1 text-sm leading-6 text-slate-500">{{ $text }}</p>
+                    </div>
+                </li>
+            @endforeach
+        </ol>
 
     </section>
 
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+    // Press "/" anywhere to jump to search.
+    document.addEventListener('keydown', (e) => {
+        const tag = (e.target.tagName || '').toLowerCase();
+        if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+        if (['input', 'textarea', 'select'].includes(tag) || e.target.isContentEditable) return;
+        e.preventDefault();
+        document.getElementById('home-search')?.focus();
+    });
+</script>
+@endpush

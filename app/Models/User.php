@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, Notifiable;
 
@@ -35,10 +37,8 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
-    public function member()
-    {
-        return $this->hasOne(Member::class, 'email', 'email');
-    }
+    public function member() { return $this->hasOne(Member::class); }
+    
     public function membershipApplication()
 {
     return $this->hasOne(MembershipApplication::class);

@@ -25,7 +25,9 @@ class Borrowing extends Model
         'returned_at' => 'date',
         'fine_amount' => 'decimal:2',
     ];
-
+public function scopeActive($q)  { return $q->whereNull('returned_at'); }
+public function scopeOverdue($q) { return $q->whereNull('returned_at')->whereDate('due_date', '<', today()); }
+public function isOverdue(): bool { return $this->returned_at === null && $this->due_date->lt(today()); }
     public function member()
 {
     return $this->belongsTo(Member::class)->withTrashed();

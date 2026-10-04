@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Book;
 use App\Models\Borrowing;
 use App\Models\Member;
+use App\Models\Reservation;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 
@@ -36,17 +37,31 @@ class BorrowingService
             if ($alreadyBorrowed) {
                 throw new DomainException('Member already has this book.');
             }
+            $queue = Reservation::active()->where('book_id', $book->id)->orderBy('id')->pluck('member_id');
+$position = $queue->search($member->id);
+$ahead = $position === false ? $queue->count() : $position;
+
+if ($ahead >= $book->available_quantity) {
+    throw new DomainException('Available copies are held for members who reserved earlier.');
+}
 
             $book->decrement('available_quantity');
 
-            return Borrowing::create([
-                'member_id' => $member->id,
-                'book_id' => $book->id,
-                'borrowed_at' => today(),
-                'due_date' => today()->addDays(config('library.loan_days')),
-                'status' => 'borrowed',
-                'fine_amount' => 0,
-            ]);
+           $borrowing = Borrowing::create([
+    'member_id' => $member->id,
+    'book_id' => $book->id,
+    'borrowed_at' => today(),
+    'due_date' => today()->addDays(config('library.loan_days')),
+    'status' => 'borrowed',
+    'fine_amount' => 0,
+]);
+
+Reservation::active()
+    ->where('member_id', $member->id)
+    ->where('book_id', $book->id)
+    ->update(['status' => Reservation::FULFILLED, 'fulfilled_at' => now()]);
+
+return $borrowing;
         });
     }
 

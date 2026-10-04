@@ -17,6 +17,7 @@ class Member extends Model
     ];
 
     protected $fillable = [
+        'user_id',
         'member_number',
         'first_name',
         'last_name',
@@ -47,4 +48,5 @@ public function reservations()
 {
     return $this->hasMany(Reservation::class);
 }
+public function user() { return $this->belongsTo(User::class); }
 }

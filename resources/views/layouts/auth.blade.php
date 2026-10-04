@@ -6,7 +6,7 @@
 
     <title>@yield('title', 'Library Management System')</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+@vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <script>
         tailwind.config = {

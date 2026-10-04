@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('members', function (Blueprint $table) {
     $table->id();
-    $table->string('member_number')->unique(); // رقم عضوية فريد
+    $table->string('member_number')->unique(); 
     $table->string('first_name');
     $table->string('last_name');
     $table->string('email')->unique();
@@ -28,6 +28,8 @@ return new class extends Migration
     $table->enum('status', ['active', 'suspended', 'expired'])->default('active');
     $table->decimal('outstanding_fines', 8, 2)->default(0);
     $table->text('notes')->nullable();
+     $table->foreignId('user_id')->nullable()->unique()->after('id')
+          ->constrained()->nullOnDelete();
     $table->timestamps();
 });
     }

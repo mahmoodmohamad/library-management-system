@@ -1,0 +1,300 @@
+/* public/css/app.css
+   Enhances the existing Tailwind-based UI without requiring Blade changes. */
+
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root {
+  --font-body: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+
+  --ink: #0f172a;
+  --ink-soft: #475569;
+  --muted: #64748b;
+  --faint: #94a3b8;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --paper: #f8fafc;
+  --surface: #ffffff;
+
+  --brand: #2563eb;
+  --brand-strong: #1d4ed8;
+  --brand-ring: rgb(37 99 235 / 0.18);
+
+  --ok: #059669;
+  --bad: #dc2626;
+
+  --r-sm: 0.5rem;
+  --r-md: 0.75rem;
+  --r-lg: 1rem;
+
+  --shadow-1: 0 1px 2px rgb(15 23 42 / 0.06);
+  --shadow-2: 0 10px 28px -10px rgb(15 23 42 / 0.28);
+
+  --header-h: 4rem;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+}
+
+html[dir="rtl"] {
+  --font-body: "IBM Plex Sans Arabic", "Tajawal", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-body);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--header-h) + 1rem);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Serif display headings — visible change on every page */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+  line-height: 1.2;
+}
+
+main p, main li {
+  text-wrap: pretty;
+}
+
+main table {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: #bfdbfe;
+  color: var(--ink);
+}
+
+/* ============================================================
+   FOCUS — visible, consistent, accessible
+   ============================================================ */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+:where(a, button, input, select, textarea, summary):focus:not(:focus-visible) {
+  outline: none;
+}
+
+.skip-link {
+  position: absolute;
+  top: -4rem;
+  left: 1rem;
+  z-index: 100;
+  padding: 0.625rem 1rem;
+  color: #fff;
+  background: var(--ink);
+  border-radius: var(--r-sm);
+  transition: top var(--dur-base) var(--ease-out);
+}
+.skip-link:focus { top: 1rem; }
+
+/* ============================================================
+   FORM CONTROLS — bigger, smoother, clearer states
+   Works on every <input>/<select>/<textarea> already in your Blade
+   ============================================================ */
+main :is(input:not([type="checkbox"], [type="radio"]), select) {
+  min-height: 2.75rem;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+main textarea {
+  min-height: 6rem;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+/* Focus glow — visible improvement everywhere */
+main :is(input, select, textarea):focus {
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 4px var(--brand-ring);
+}
+
+/* Invalid state */
+main :is(input, select, textarea)[aria-invalid="true"],
+main :is(input, select, textarea):user-invalid {
+  border-color: var(--bad) !important;
+}
+
+/* Placeholder contrast */
+main :is(input, textarea)::placeholder {
+  color: var(--faint);
+  opacity: 1;
+}
+
+/* Disabled */
+main :is(input, select, textarea):disabled {
+  background: #f1f5f9;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* Checkboxes & radios */
+main input[type="checkbox"],
+main input[type="radio"] {
+  accent-color: var(--brand);
+}
+
+/* Remove number spinners */
+main input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+main input[type="number"]::-webkit-outer-spin-button,
+main input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none; margin: 0;
+}
+
+/* Autofill */
+main input:-webkit-autofill,
+main input:-webkit-autofill:hover,
+main input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ink);
+  -webkit-box-shadow: 0 0 0 1000px #f0f9ff inset;
+  box-shadow: 0 0 0 1000px #f0f9ff inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ============================================================
+   INTERACTIVE SURFACES — subtle lift on existing cards
+   Targets the exact pattern your Blade uses:
+   "rounded-2xl border ... bg-white shadow-sm transition"
+   ============================================================ */
+article.group,
+.book-card,
+[class*="rounded-2xl"][class*="shadow-sm"] {
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+article.group:hover,
+.book-card:hover,
+a[class*="rounded-2xl"][class*="shadow-sm"]:hover {
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.04),
+    0 12px 30px -12px rgb(15 23 42 / 0.18);
+}
+
+/* ============================================================
+   BUTTONS — existing Tailwind buttons get smoother press/hover
+   ============================================================ */
+button,
+a[class*="rounded-lg"][class*="px-"],
+a[class*="rounded-xl"][class*="px-"] {
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+button:active:not(:disabled),
+a[class*="rounded-lg"][class*="px-"]:active,
+a[class*="rounded-xl"][class*="px-"]:active {
+  transform: translateY(1px);
+}
+
+/* Primary button glow on hover */
+a[class*="bg-blue-600"]:hover,
+button[class*="bg-blue-600"]:hover {
+  box-shadow: 0 8px 20px -8px rgb(37 99 235 / 0.55);
+}
+
+/* ============================================================
+   TABLES — scannable rows, tabular numbers
+   Targets the existing "min-w-full divide-y" tables
+   ============================================================ */
+table.min-w-full tbody tr {
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+table.min-w-full tbody tr:hover {
+  background-color: var(--paper);
+}
+table.min-w-full td,
+table.min-w-full th {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   SCROLLBARS — thin & elegant (visible on all pages)
+   ============================================================ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  background-clip: padding-box;
+}
+
+/* ============================================================
+   STICKY HEADER — smoother scroll shadow
+   ============================================================ */
+header.sticky {
+  transition: box-shadow var(--dur-base) var(--ease-out);
+}
+
+/* ============================================================
+   MOTION & ACCESSIBILITY
+   ============================================================ */
+@media (pointer: coarse) {
+  button,
+  select,
+  input:not([type="checkbox"], [type="radio"]) {
+    min-height: 2.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --line: #94a3b8;
+    --line-strong: #64748b;
+    --muted: #334155;
+  }
+}
+
+/* ============================================================
+   PRINT
+   ============================================================ */
+@media print {
+  header, footer, .no-print { display: none !important; }
+  body { background: #fff; color: #000; }
+  section, .book-card, article { box-shadow: none !important; }
+}
