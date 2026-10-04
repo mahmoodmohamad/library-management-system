@@ -9,13 +9,29 @@ jobs:
   tests:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: library_management
+          MYSQL_USER: library
+          MYSQL_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, pdo_sqlite, sqlite3
+          extensions: mbstring, pdo_mysql
           coverage: none
 
       - name: Cache Composer
@@ -32,7 +48,16 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate
-          
+
+      - name: Configure database
+        run: |
+          sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
+          sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+          sed -i 's/^DB_PORT=.*/DB_PORT=3306/' .env
+          sed -i 's/^DB_DATABASE=.*/DB_DATABASE=library_management/' .env
+          sed -i 's/^DB_USERNAME=.*/DB_USERNAME=library/' .env
+          sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=password/' .env
+
       - name: Prepare database
         run: php artisan migrate:fresh --seed
 
