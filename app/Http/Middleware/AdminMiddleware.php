@@ -9,15 +9,15 @@ use Symfony\Component\HttpFoundation\Response;
 class AdminMiddleware
 {
     public function handle(Request $request, Closure $next): Response
-{
-    if (! auth()->check()) {
-        return redirect()->route('login');
-    }
+    {
+        $user = $request->user();
 
-    if (! auth()->user()->hasRole('admin', 'librarian')) {
-        abort(403);
-    }
+        if (! $user) {
+            return redirect()->route('login');
+        }
 
-    return $next($request);
-}
+        abort_unless($user->isBackOffice(), 403);
+
+        return $next($request);
+    }
 }

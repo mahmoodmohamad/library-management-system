@@ -90,52 +90,43 @@ class BookController extends Controller
         ));
     }
 
-    public function borrow(Book $book): RedirectResponse
-    {
-        $this->attempt('borrowing', fn () =>
-            $this->borrowingService->borrow($this->currentMember('borrowing'), $book));
+   public function borrow(Book $book): RedirectResponse
+{
+    $this->attempt('borrowing', fn () =>
+        $this->borrowingService->borrow($this->currentMember('borrowing'), $book));
 
-        return redirect()
-            ->route('books.show', $book)
-            ->with('success', 'Book borrowed successfully.');
-    }
+    return redirect()->route('books.show', $book)->with('success', 'Book borrowed successfully.');
+}
 
-    public function returnBook(Book $book): RedirectResponse
-    {
-        $member = $this->currentMember('borrowing');
+public function returnBook(Book $book): RedirectResponse
+{
+    $member = $this->currentMember('borrowing');
 
-        $borrowing = Borrowing::active()
-            ->where('member_id', $member->id)
-            ->where('book_id', $book->id)
-            ->first()
-            ?? throw ValidationException::withMessages([
-                'borrowing' => 'You do not have an active borrowing for this book.',
-            ]);
+    $borrowing = Borrowing::where('member_id', $member->id)
+        ->where('book_id', $book->id)
+        ->whereNull('returned_at')
+        ->first()
+        ?? throw ValidationException::withMessages(['borrowing' => 'You do not have an active borrowing for this book.']);
 
-        $this->attempt('borrowing', fn () => $this->borrowingService->returnBook($borrowing));
+    $this->attempt('borrowing', fn () => $this->borrowingService->returnBook($borrowing));
 
-        return redirect()
-            ->route('books.show', $book)
-            ->with('success', 'Book returned successfully.');
-    }
+    return redirect()->route('books.show', $book)->with('success', 'Book returned successfully.');
+}
 
-    public function reserve(Book $book): RedirectResponse
-    {
-        $this->attempt('reservation', fn () =>
-            $this->reservationService->reserve($this->currentMember('reservation'), $book));
+public function reserve(Book $book): RedirectResponse
+{
+    $this->attempt('reservation', fn () =>
+        $this->reservationService->reserve($this->currentMember('reservation'), $book));
 
-        return redirect()
-            ->route('books.show', $book)
-            ->with('success', 'Book reserved. We will keep your place in the queue.');
-    }
+    return redirect()->route('books.show', $book)
+        ->with('success', 'Book reserved. We will keep your place in the queue.');
+}
 
-    public function cancelReservation(Book $book): RedirectResponse
-    {
-        $this->attempt('reservation', fn () =>
-            $this->reservationService->cancel($this->currentMember('reservation'), $book));
+public function cancelReservation(Book $book): RedirectResponse
+{
+    $this->attempt('reservation', fn () =>
+        $this->reservationService->cancel($this->currentMember('reservation'), $book));
 
-        return redirect()
-            ->route('books.show', $book)
-            ->with('success', 'Reservation cancelled.');
-    }
+    return redirect()->route('books.show', $book)->with('success', 'Reservation cancelled.');
+}
 }

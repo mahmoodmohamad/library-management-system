@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\BookController;
 use App\Http\Controllers\Admin\BorrowingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MemberController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -11,33 +13,57 @@ use App\Http\Controllers\BookController as UserBookController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MembershipApplicationController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\ReportController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| Email Verification
+|--------------------------------------------------------------------------
+*/
 
-use App\Http\Controllers\Admin\StaffController;
 Route::middleware('auth')->group(function () {
-    Route::get('/email/verify', fn () => view('auth.verify-email'))->name('verification.notice');
+    Route::get('/email/verify', function () {
+        return view('auth.verify-email');
+    })->name('verification.notice');
 
-    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $r) {
-        $r->fulfill();
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+
         return redirect()->route('profile');
-    })->middleware('signed')->name('verification.verify');
+    })
+        ->middleware('signed')
+        ->name('verification.verify');
 
-    Route::post('/email/verification-notification', function (Request $r) {
-        $r->user()->sendEmailVerificationNotification();
+    Route::post('/email/verification-notification', function (Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+
         return back()->with('success', 'Verification link sent.');
-    })->middleware('throttle:6,1')->name('verification.send');
+    })
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
 });
 
-// routes/web.php
+/*
+|--------------------------------------------------------------------------
+| Password Reset
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware('guest')->group(function () {
-    Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
-    Route::post('/forgot-password', [PasswordResetController::class, 'email'])->middleware('throttle:6,1')->name('password.email');
-    Route::get('/reset-password/{token}', [PasswordResetController::class, 'reset'])->name('password.reset');
-    Route::post('/reset-password', [PasswordResetController::class, 'update'])->name('password.update');
+    Route::get('/forgot-password', [PasswordResetController::class, 'request'])
+        ->name('password.request');
+
+    Route::post('/forgot-password', [PasswordResetController::class, 'email'])
+        ->middleware('throttle:6,1')
+        ->name('password.email');
+
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'reset'])
+        ->name('password.reset');
+
+    Route::post('/reset-password', [PasswordResetController::class, 'update'])
+        ->name('password.update');
 });
 
 /*
@@ -88,7 +114,18 @@ Route::post('/logout', [LoginController::class, 'destroy'])
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'index'])
         ->name('profile');
+});
 
+/*
+|--------------------------------------------------------------------------
+| Verified User Routes
+|--------------------------------------------------------------------------
+|
+| These actions require the user's email to be verified.
+|
+*/
+
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/membership/apply', [MembershipApplicationController::class, 'create'])
         ->name('membership.apply');
 
@@ -116,25 +153,41 @@ Route::middleware('auth')->group(function () {
 
 Route::prefix('admin')
     ->name('admin.')
-    ->middleware(['auth', 'admin'])
+    ->middleware(['auth', 'verified', 'admin'])
     ->group(function () {
-Route::resource('staff', StaffController::class)->except('show');
 
-
-
-Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+        /*
+        |--------------------------------------------------------------------------
+        | Dashboard
+        |--------------------------------------------------------------------------
+        */
 
         Route::get('/', [DashboardController::class, 'index'])
             ->name('dashboard');
 
         /*
-        | Books
+        |--------------------------------------------------------------------------
+        | Reports
+        |--------------------------------------------------------------------------
         */
+
+        Route::get('reports', [ReportController::class, 'index'])
+            ->name('reports.index');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Books
+        |--------------------------------------------------------------------------
+        */
+
         Route::resource('books', BookController::class);
 
         /*
+        |--------------------------------------------------------------------------
         | Members
+        |--------------------------------------------------------------------------
         */
+
         Route::get('members/pending', [MemberController::class, 'pending'])
             ->name('members.pending');
 
@@ -146,16 +199,32 @@ Route::get('reports', [ReportController::class, 'index'])->name('reports.index')
         Route::resource('members', MemberController::class);
 
         /*
+        |--------------------------------------------------------------------------
         | Borrowings
+        |--------------------------------------------------------------------------
         */
-        Route::get('/borrowings', [BorrowingController::class, 'index'])
+
+        Route::get('borrowings', [BorrowingController::class, 'index'])
             ->name('borrowings.index');
 
-        Route::post('/borrowings', [BorrowingController::class, 'store'])
+        Route::post('borrowings', [BorrowingController::class, 'store'])
             ->name('borrowings.store');
 
         Route::post(
-            '/borrowings/{borrowing}/give-back',
+            'borrowings/{borrowing}/give-back',
             [BorrowingController::class, 'giveBack']
         )->name('borrowings.giveBack');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Staff
+        |--------------------------------------------------------------------------
+        |
+        | Staff management is intended to be restricted to admin users.
+        | The actual authorization should also be enforced by middleware/policy.
+        |
+        */
+
+        Route::resource('staff', StaffController::class)
+            ->except('show');
     });

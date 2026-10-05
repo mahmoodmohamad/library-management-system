@@ -47,4 +47,8 @@ public function hasRole(string ...$roles): bool
 {
     return in_array($this->role?->name, $roles, true);
 }
+public function isBackOffice(): bool
+{
+    return $this->hasRole('admin', 'librarian', 'staff');
+}
 }
