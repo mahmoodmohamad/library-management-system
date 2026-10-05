@@ -16,6 +16,8 @@ use App\Http\Controllers\Admin\ReportController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 
+
+use App\Http\Controllers\Admin\StaffController;
 Route::middleware('auth')->group(function () {
     Route::get('/email/verify', fn () => view('auth.verify-email'))->name('verification.notice');
 
@@ -116,6 +118,8 @@ Route::prefix('admin')
     ->name('admin.')
     ->middleware(['auth', 'admin'])
     ->group(function () {
+Route::resource('staff', StaffController::class)->except('show');
+
 
 
 Route::get('reports', [ReportController::class, 'index'])->name('reports.index');

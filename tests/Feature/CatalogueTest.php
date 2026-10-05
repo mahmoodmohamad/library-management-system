@@ -77,13 +77,13 @@ class CatalogueTest extends TestCase
 
     // ---- book details states ----
 
-    private function memberUser(array $member = []): array
-    {
-        $user = User::factory()->create();
-        $m = Member::factory()->active()->create(['email' => $user->email] + $member);
+   private function memberUser(array $member = []): array
+{
+    $user = User::factory()->create();
+    $m = Member::factory()->active()->forUser($user)->create($member);
 
-        return [$user, $m];
-    }
+    return [$user, $m];
+}
 
     public function test_guest_sees_sign_in(): void
     {

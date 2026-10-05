@@ -11,20 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('borrowings', function (Blueprint $table) {
+       Schema::create('borrowings', function (Blueprint $table) {
     $table->id();
-    $table->unsignedBigInteger('member_id');
-    $table->unsignedBigInteger('book_id');
+    $table->foreignId('member_id')->constrained()->restrictOnDelete();
+    $table->foreignId('book_id')->constrained()->restrictOnDelete();
     $table->date('borrowed_at');
     $table->date('due_date');
     $table->date('returned_at')->nullable();
     $table->enum('status', ['borrowed', 'returned', 'overdue'])->default('borrowed');
     $table->decimal('fine_amount', 8, 2)->default(0);
-
-   
     $table->timestamps();
-     $table->foreign('member_id')->references('id')->on('members')->onDelete('cascade');
-    $table->foreign('book_id')->references('id')->on('books')->onDelete('cascade');
+
+    $table->index(['member_id', 'book_id', 'returned_at']);
+    $table->index(['returned_at', 'due_date']);
 });
     }
 

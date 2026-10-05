@@ -3,35 +3,31 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
-{
-    // الأول سيّد كل الجداول المرجعية
-    $this->call([
-        RoleSeeder::class,
-CategorySeeder::class,
-PublisherSeeder::class,
-AuthorSeeder::class,
-BookSeeder::class,
-AuthorBookSeeder::class,
-MemberSeeder::class,
-BorrowingSeeder::class,
-    ]);
+    {
+        // Roles first: UserFactory and every user below depend on them.
+       $this->call([
+    RoleSeeder::class,
+    AdminSeeder::class,
+    CategorySeeder::class,
+    PublisherSeeder::class,
+    AuthorSeeder::class,
+    BookSeeder::class,
+    AuthorBookSeeder::class,
+    MemberSeeder::class,
+    BorrowingSeeder::class,
+]);
 
-    // بعدين اعمل الـ Users بعد ما يكون فيه Roles
-    User::factory(10)->create();
+        // All passwords: "password"
+       
+        User::factory()->librarian()->create(['name' => 'Librarian', 'email' => 'librarian@example.com']);
 
-    User::factory()->create([
-        'name' => 'Test User',
-        'email' => 'test@example.com',
-    ]);
-}
-
+        // Plain users without membership (to test the "apply" flow).
+        User::factory()->create(['name' => 'Test User', 'email' => 'test@example.com']);
+        User::factory()->count(3)->create();
+    }
 }

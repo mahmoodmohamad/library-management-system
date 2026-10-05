@@ -3,19 +3,22 @@
 namespace Database\Seeders;
 
 use App\Models\Member;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class MemberSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        //
-        Member::factory()->count(8)->active()->create();
-Member::factory()->suspended()->create();
-Member::factory()->expired()->create();
+        // Demo login: member@example.com / password
+        $demo = User::factory()->create(['name' => 'Demo Member', 'email' => 'member@example.com']);
+        Member::factory()->active()->forUser($demo)->create();
+
+        foreach (range(1, 7) as $_) {
+            Member::factory()->active()->forUser(User::factory()->create())->create();
+        }
+
+        Member::factory()->suspended()->forUser(User::factory()->create())->create();
+        Member::factory()->expired()->forUser(User::factory()->create())->create();
     }
 }

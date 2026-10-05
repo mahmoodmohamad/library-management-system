@@ -3,17 +3,25 @@
 namespace Database\Seeders;
 
 use App\Models\Book;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Category;
+use App\Models\Publisher;
 use Illuminate\Database\Seeder;
 
 class BookSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        //
-        Book::factory()->count(20)->create();
+        $categories = Category::pluck('id');
+        $publishers = Publisher::pluck('id');
+
+        // Reuse the seeded categories/publishers instead of letting
+        // the factory create a new one for every book.
+        Book::factory()
+            ->count(20)
+            ->state(fn () => [
+                'category_id' => $categories->random(),
+                'publisher_id' => $publishers->random(),
+            ])
+            ->create();
     }
 }

@@ -8,6 +8,7 @@ use App\Services\BorrowingService;
 use DomainException;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Artisan;
 
 class BorrowingSeeder extends Seeder
 {
@@ -39,5 +40,8 @@ class BorrowingSeeder extends Seeder
                 Carbon::setTestNow();
             }
         }
+
+        // Loans left open past their due date get status "overdue".
+        Artisan::call('library:mark-overdue');
     }
 }

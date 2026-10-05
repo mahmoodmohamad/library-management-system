@@ -134,7 +134,7 @@ class BookController extends Controller
             'publisher_id' => 'nullable|exists:publishers,id',
             'category_id' => 'required|exists:categories,id',
             'description' => 'required|string',
-            'publication_year' => 'required|integer|between:1000,'.now()->year,
+            'publication_year' => 'required|integer|between:1901,'.now()->year,
             'pages' => 'required|integer|min:1',
             'total_copies' => 'required|integer|min:1',
             'shelf_location' => 'nullable|string|max:255',
